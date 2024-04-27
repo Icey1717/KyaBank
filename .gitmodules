@@ -4,3 +4,6 @@
 [submodule "edBank"]
 	path = edBank
 	url = https://github.com/Icey1717/edBank.git
+[submodule "argparse"]
+	path = argparse
+	url = https://github.com/p-ranav/argparse.git
