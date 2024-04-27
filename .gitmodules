@@ -1,3 +1,6 @@
 [submodule "edFile"]
 	path = edFile
 	url = https://github.com/Icey1717/edFile.git
+[submodule "edBank"]
+	path = edBank
+	url = https://github.com/Icey1717/edBank.git
