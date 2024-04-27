@@ -52,4 +52,4 @@ add_executable(KyaBank
 
 target_compile_definitions(KyaBank PRIVATE "PLATFORM_WIN")
 
-target_include_directories(KyaBank PRIVATE "src" "include" "edBank/include" "edFile/include")
+target_include_directories(KyaBank PRIVATE "src" "include" "edBank/include" "edFile/include" "argparse/include")

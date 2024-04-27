@@ -3,6 +3,8 @@
 #include <iostream>
 #include <filesystem>
 
+#include <argparse/argparse.hpp>
+
 #include "edBank.h"
 #include "edBankBuffer.h"
 #include "edBankFile.h"
@@ -24,58 +26,140 @@ void Initialize()
 	int local_4 = 0;
 	bool bVar1 = edFileFilerConfigure("<cdvd>", IM_CALC_SIZE, (void*)0x898, &local_4);
 	if (bVar1 != false) {
-		edCdlFolder* PTR_edCdlFolder_00448ef4 = (edCdlFolder*)edMemAlloc(TO_HEAP(H_MAIN), local_4);
-		/* <cdvd> */
-		edFileFilerConfigure("<cdvd>", IM_INIT, PTR_edCdlFolder_00448ef4, (int*)local_4);
+		edCdlFolder* pCdlFolder = (edCdlFolder*)edMemAlloc(TO_HEAP(H_MAIN), local_4);
+		edFileFilerConfigure("<cdvd>", IM_INIT, pCdlFolder, (int*)local_4);
 	}
 
 	edBankInit();
 }
 
-void ListFiles(const char* pBankPath)
+class LoadedBank
 {
-	printf("Listing %s:\n", pBankPath);
+	edCBankBuffer bankBuffer;
 
-	edCBankBuffer BootData_BankBuffer;
-	edCBankBufferEntry* BootData_BankBufferEntry;
+public:
+	edCBankBufferEntry* pBankBufferEntry;
 
-	edCBankInstall bankHeader;
-	memset(&bankHeader, 0, sizeof(edCBankInstall));
+	LoadedBank(const char* pBankPath)
+		: bankBuffer()
+		, pBankBufferEntry(nullptr)
+	{
+		edCBankInstall bankHeader;
+		memset(&bankHeader, 0, sizeof(edCBankInstall));
 
-	BootData_BankBuffer.initialize(0x3200000, 1, &bankHeader);
-	/* Set the bank header to point towards 'CDEURO/menu/Messages.bnk' */
-	bankHeader.filePath = const_cast<char*>(pBankPath);
-	BootData_BankBufferEntry = BootData_BankBuffer.get_free_entry();
-	BootData_BankBufferEntry->load(&bankHeader);
-
-	int elementCount = BootData_BankBufferEntry->get_element_count();
-
-	for (int i = 0; i < elementCount; i++) {
-		printf("%s\n", DebugFindFilePath(BootData_BankBufferEntry->pFileHeader, i));
+		bankBuffer.initialize(0x3200000, 1, &bankHeader);
+		bankHeader.filePath = const_cast<char*>(pBankPath);
+		pBankBufferEntry = bankBuffer.get_free_entry();
+		pBankBufferEntry->load(&bankHeader);
 	}
 
-	BootData_BankBufferEntry->close();
-	BootData_BankBuffer.terminate();
+	~LoadedBank()
+	{
+		pBankBufferEntry->close();
+		bankBuffer.terminate();
+	}
+	
+	LoadedBank(const LoadedBank&) = delete;
+	LoadedBank& operator=(const LoadedBank&) = delete;
+};
 
-	printf("\n");
+void ListFiles(const char* pBankPath)
+{
+	printf("Listing Files contained in %s:\n", pBankPath);
+
+	LoadedBank loadedBank(pBankPath);
+
+	int elementCount = loadedBank.pBankBufferEntry->get_element_count();
+
+	for (int i = 0; i < elementCount; i++) {
+		printf("%s\n", DebugFindFilePath(loadedBank.pBankBufferEntry->pFileHeader, i));
+	}
 }
 
-int main() 
+void ExtractFiles(const char* pBankPath, const char* pOutputPath)
+{
+	printf("Extracting Files contained in %s:\n", pBankPath);
+	printf("To %s:\n", pOutputPath);
+
+	LoadedBank loadedBank(pBankPath);
+
+	edCBankFileHeader* pFileHeader = loadedBank.pBankBufferEntry->pFileHeader;
+
+	int inIndex = 0;
+	if (pFileHeader->fileCount != 0) {
+		do {
+			const int fileDataIndex = pFileHeader->get_index(inIndex, 0);
+			const std::string fileName = pFileHeader->get_entry_filename(inIndex);
+
+			printf("Extracting: %s\n", fileName.c_str());
+			const FileHeaderFileData* pFileData = pFileHeader->get_entry(fileDataIndex);
+
+			printf("Size: %x\n", pFileData->size);
+			printf("Offset: %x\n", pFileData->offset);
+
+			const char* pStart = reinterpret_cast<char*>(pFileHeader) + pFileData->offset - 8;
+			const char* pEnd = pStart + pFileData->size;
+
+			if (!std::filesystem::exists(pOutputPath)) {
+				std::filesystem::create_directories(pOutputPath);
+			}
+
+			// Get everything after the last backslash
+			const std::string trailingFileName = fileName.substr(fileName.find_last_of("\\") + 1, fileName.length());
+			const std::string outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+
+
+			FILE* pFile = fopen(outputPath.c_str(), "wb");
+			if (pFile) {
+				fwrite(pStart, 1, pFileData->size, pFile);
+				fclose(pFile);
+			}
+
+			inIndex = inIndex + 1;
+			printf("\n");
+		} while (inIndex < pFileHeader->fileCount);
+	}
+}
+
+int main(int argc, char** argv)
 {
 	Initialize();
+		
+	argparse::ArgumentParser program("KyaBank");
 
-	// Request the directory from the user
-	char directory[256];
-	std::cout << "Enter the directory: ";
-	std::cin >> directory;
+	argparse::ArgumentParser listCommand("list");
+	listCommand.add_description("List files contained in the .BNK file");
+	listCommand.add_argument("file")
+		.help("The path to a .BNK file")
+		.required();
 
-	// Find all paths to .bnk files in a directory
-	std::filesystem::path p = directory;
-	std::filesystem::recursive_directory_iterator it(p);
-	for (auto& entry : it) {
-		if (entry.path().extension() == ".bnk" || entry.path().extension() == ".BNK") {
-			ListFiles(entry.path().string().c_str());
-		}
+	argparse::ArgumentParser extractCommand("extract");
+	extractCommand.add_description("Extract files contained in the .BNK file");
+	extractCommand.add_argument("file")
+		.help("The path to a .BNK file")
+		.required();
+	extractCommand.add_argument("-o", "--output")
+		.help("The path to extract the files to")
+		.required();
+
+	program.add_subparser(listCommand);
+	program.add_subparser(extractCommand);
+
+	try {
+		program.parse_args(argc, argv);
+	}
+	catch (const std::exception& err) {
+		std::cerr << err.what() << std::endl;
+		std::cerr << program;
+		std::exit(1);
+	}
+
+	if (program.is_subcommand_used(listCommand)) {
+		ListFiles(listCommand.get<std::string>("file").c_str());
+	}
+
+	if (program.is_subcommand_used(extractCommand)) {
+		ExtractFiles(extractCommand.get<std::string>("file").c_str(), extractCommand.get<std::string>("-o").c_str());
 	}
 
 	return 0;
