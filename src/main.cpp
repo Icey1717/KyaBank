@@ -79,7 +79,7 @@ void ListFiles(const char* pBankPath)
 void ExtractFiles(const char* pBankPath, const char* pOutputPath)
 {
 	printf("Extracting Files contained in %s:\n", pBankPath);
-	printf("To %s:\n", pOutputPath);
+	printf("To: %s\n\n", pOutputPath);
 
 	LoadedBank loadedBank(pBankPath);
 
