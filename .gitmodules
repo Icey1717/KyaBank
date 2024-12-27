@@ -7,3 +7,9 @@
 [submodule "argparse"]
 	path = argparse
 	url = https://github.com/p-ranav/argparse.git
+[submodule "KyaTexture"]
+	path = KyaTexture
+	url = https://github.com/Icey1717/KyaTexture
+[submodule "TextureUpload"]
+	path = TextureUpload
+	url = https://github.com/Icey1717/TextureUpload.git
