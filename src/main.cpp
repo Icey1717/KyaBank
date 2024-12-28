@@ -78,7 +78,7 @@ void ListFiles(const char* pBankPath)
 	}
 }
 
-void ExtractFiles(const char* pBankPath, const char* pOutputPath)
+void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRelative)
 {
 	printf("Extracting Files contained in %s:\n", pBankPath);
 	printf("To: %s\n\n", pOutputPath);
@@ -106,10 +106,25 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath)
 				std::filesystem::create_directories(pOutputPath);
 			}
 
-			// Get everything after the last backslash
-			const std::string trailingFileName = fileName.substr(fileName.find_last_of("\\") + 1, fileName.length());
-			const std::string outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+			std::string outputPath;
 
+			// Get everything after the last backslash
+			if (bBankRelative) {
+				const std::string prefix = std::string("D:\\");
+				const std::string trailingFileName = fileName.substr(prefix.length(), fileName.length() - prefix.length());
+				outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+
+				const std::string directoryPath = outputPath.substr(0, outputPath.find_last_of("\\"));
+
+				if (!std::filesystem::exists(directoryPath)) {
+					std::filesystem::create_directories(directoryPath);
+				}
+			}
+			else
+			{
+				const std::string trailingFileName = fileName.substr(fileName.find_last_of("\\") + 1, fileName.length());
+				outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+			}
 
 			FILE* pFile = fopen(outputPath.c_str(), "wb");
 			if (pFile) {
@@ -127,8 +142,6 @@ int main(int argc, char** argv)
 {
 	Initialize();
 
-	Texture::Convert("G:\\repos\\KyaBank\\out\\test\\", "");
-		
 	argparse::ArgumentParser program("KyaBank");
 
 	argparse::ArgumentParser listCommand("list");
@@ -145,14 +158,17 @@ int main(int argc, char** argv)
 	extractCommand.add_argument("-o", "--output")
 		.help("The path to extract the files to")
 		.required();
+	extractCommand.add_argument("-f", "--flatten")
+		.help("When extracting, flatten out the directory structure")
+		.flag();
 
 	argparse::ArgumentParser texConvertCommand("texconvert");
-	extractCommand.add_description("Convert a g2d file into a bmp");
-	extractCommand.add_argument("srcPath")
-		.help("The path to a .g2d file")
+	texConvertCommand.add_description("Convert a single or set of .g2d file/s into .bmp");
+	texConvertCommand.add_argument("srcPath")
+		.help("The path to a .g2d file or folder containing .g2d files")
 		.required();
-	extractCommand.add_argument("-o", "--output")
-		.help("Output path for the .bmp file")
+	texConvertCommand.add_argument("-o", "--output")
+		.help("Output path for the .bmp files")
 		.required();
 
 	program.add_subparser(listCommand);
@@ -173,7 +189,7 @@ int main(int argc, char** argv)
 	}
 
 	if (program.is_subcommand_used(extractCommand)) {
-		ExtractFiles(extractCommand.get<std::string>("file").c_str(), extractCommand.get<std::string>("-o").c_str());
+		ExtractFiles(extractCommand.get<std::string>("file").c_str(), extractCommand.get<std::string>("-o").c_str(), extractCommand["-f"] == false);
 	}
 
 	if (program.is_subcommand_used(texConvertCommand)) {

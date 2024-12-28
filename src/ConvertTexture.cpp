@@ -35,7 +35,7 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 	return true;
 }
 
-static bool ConvertFile(std::filesystem::path srcPath, std::filesystem::path dstPath)
+static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
 	ed_g2d_manager manager;
 
@@ -69,6 +69,19 @@ static bool ConvertFile(std::filesystem::path srcPath, std::filesystem::path dst
 	const std::string srcFileName = srcPath.filename().string();
 	const auto srcFileNameNoExt = srcFileName.substr(0, srcFileName.length() - srcPath.extension().string().length());
 
+	// Get the delta between the root and src path
+	std::filesystem::path relativePath = srcPath.lexically_relative(rootPath);
+
+	// Remove the filename from srcPath
+	relativePath = relativePath.replace_filename("");
+
+	// combine it with the dstPath
+	dstPath = dstPath / relativePath;
+
+	if (!std::filesystem::exists(dstPath)) {
+		std::filesystem::create_directories(dstPath);
+	}
+
 	Renderer::Kya::G2D texture(&manager, srcFileNameNoExt);
 
 	printf("Found %d materials\n", static_cast<int>(texture.GetMaterials().size()));
@@ -93,6 +106,23 @@ static bool ConvertFile(std::filesystem::path srcPath, std::filesystem::path dst
 	return true;
 }
 
+static bool ConvertDirectory(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
+{
+	bool bSuccess = true;
+
+	for (const auto& entry : std::filesystem::directory_iterator(srcPath)) {
+		if (entry.is_directory()) {
+			bSuccess |= ConvertDirectory(rootPath, entry.path(), dstPath);
+		}
+		else if (entry.path().extension() == ".g2d" || entry.path().extension() == ".G2D")
+		{
+			bSuccess |= ConvertFile(rootPath, entry.path(), dstPath);
+		}
+	}
+
+	return bSuccess;
+}
+
 bool Texture::Convert(std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
 	if (dstPath.has_filename()) {
@@ -100,20 +130,21 @@ bool Texture::Convert(std::filesystem::path srcPath, std::filesystem::path dstPa
 		return false;
 	}
 
+	if (!std::filesystem::exists(srcPath)) {
+		printf("Source path does not exist\n");
+		return false;
+	}
+
+	if (!std::filesystem::exists(dstPath)) {
+		std::filesystem::create_directories(dstPath);
+	}
+
 	if (srcPath.has_filename()) {
-		return ConvertFile(srcPath, dstPath);
+		return ConvertFile(srcPath, srcPath, dstPath);
 	}
 	else {
-		bool bSuccess = true;
-		for (const auto& entry : std::filesystem::directory_iterator(srcPath)) {
-			if (entry.is_regular_file() && entry.path().extension() == ".g2d") {
-				bSuccess |= ConvertFile(entry.path(), dstPath);
-			}
-		}
-
-		return bSuccess;
-	}
-	
+		return ConvertDirectory(srcPath, srcPath, dstPath);
+	}	
 
 	return true;
 }
