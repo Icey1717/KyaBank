@@ -14,6 +14,8 @@
 #include "edSystem.h"
 #include "ps2/_edFileFilerCDVD.h"
 
+#include "ConvertTexture.h"
+
 void Initialize()
 {
 	edCSysHandlerPool::initialize(&g_SysHandlersNodeTable_00489170, 0x8c);
@@ -124,6 +126,8 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath)
 int main(int argc, char** argv)
 {
 	Initialize();
+
+	Texture::Convert("G:\\repos\\KyaBank\\out\\test\\", "");
 		
 	argparse::ArgumentParser program("KyaBank");
 
@@ -142,8 +146,18 @@ int main(int argc, char** argv)
 		.help("The path to extract the files to")
 		.required();
 
+	argparse::ArgumentParser texConvertCommand("texconvert");
+	extractCommand.add_description("Convert a g2d file into a bmp");
+	extractCommand.add_argument("srcPath")
+		.help("The path to a .g2d file")
+		.required();
+	extractCommand.add_argument("-o", "--output")
+		.help("Output path for the .bmp file")
+		.required();
+
 	program.add_subparser(listCommand);
 	program.add_subparser(extractCommand);
+	program.add_subparser(texConvertCommand);
 
 	try {
 		program.parse_args(argc, argv);
@@ -160,6 +174,10 @@ int main(int argc, char** argv)
 
 	if (program.is_subcommand_used(extractCommand)) {
 		ExtractFiles(extractCommand.get<std::string>("file").c_str(), extractCommand.get<std::string>("-o").c_str());
+	}
+
+	if (program.is_subcommand_used(texConvertCommand)) {
+		Texture::Convert(texConvertCommand.get<std::string>("srcPath"), texConvertCommand.get<std::string>("-o"));
 	}
 
 	return 0;

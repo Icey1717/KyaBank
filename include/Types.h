@@ -1,6 +1,8 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include "PointerConv.h"
+
 typedef unsigned char   undefined;
 
 typedef unsigned char    byte;
@@ -46,6 +48,15 @@ enum EBankAction
 	OPEN = 6,
 	READ_STREAM = 2,
 	SEEK = 1
+};
+
+union edpkt_data {
+	__declspec(align(16)) struct {
+		ulong cmdA;
+		ulong cmdB;
+	};
+	uint asU32[4];
+	//edF32VECTOR4 asVector;
 };
 
 #include <assert.h>
