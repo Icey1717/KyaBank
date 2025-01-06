@@ -34,17 +34,13 @@ set(lib_src
 	"edFile/sources/ps2/_edFileFilerCDVD.cpp"
 )
 
-set (pizza_src
-	"pizza-png/src/Chunk.cpp"
-	"pizza-png/src/Chunk.h"
-	"pizza-png/src/Image.cpp"
-	"pizza-png/src/Image.h"
-	"pizza-png/src/Pixel.cpp"
-	"pizza-png/src/Pixel.h"
+set (lodepng_src
+	"lodepng/lodepng.h"
+	"lodepng/lodepng.cpp"
 )
 
-add_library(Pizza STATIC
-	${pizza_src}
+add_library(lodepng STATIC
+	${lodepng_src}
 )
 
 set (app_src
@@ -77,7 +73,7 @@ add_subdirectory("KyaTexture")
 
 add_subdirectory("TextureUpload")
 
-target_link_libraries(KyaBank PRIVATE Texture TextureUpload Pizza)
+target_link_libraries(KyaBank PRIVATE Texture TextureUpload lodepng)
 
 target_compile_definitions(KyaBank PRIVATE "PLATFORM_WIN")
 
