@@ -23,31 +23,31 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 	printf("Writing: %s\n", filename.c_str());
 
 #ifdef USE_LODE_PNG
-  std::vector<unsigned char> png;
+	std::vector<unsigned char> png;
 	unsigned error = lodepng::encode(png, pSimpleTexture->GetUploadedImageData(), pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
-	
+
 	if (!error)
 	{
-		lodepng::save_file(png, dstPath.concat(filename).u8string());
+		lodepng::save_file(png, dstPath.concat(filename).string());
 	}
 
 	if (error)
-  {
-    std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+	{
+		std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
 		return false;
-  }
+	}
 #endif
 
 #ifdef USE_PIZZA_PNG
-  const std::filesystem::path filePath = dstPath.concat(filename);
+	const std::filesystem::path filePath = dstPath.concat(filename);
 
-printf("Writing: %s\n", filename.c_str());
+	printf("Writing: %s\n", filename.c_str());
 
-std::ofstream file(dstPath, std::ios::binary);
-if (!file.is_open())
-{
-	return false;
-}
+	std::ofstream file(dstPath, std::ios::binary);
+	if (!file.is_open())
+	{
+		return false;
+	}
 	MaratTanalin::PizzaPNG::Image outImage(pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
 
 	for (int i = 0; i < pSimpleTexture->GetUploadedImageData().size(); i += 4)

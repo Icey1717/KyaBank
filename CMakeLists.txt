@@ -40,7 +40,7 @@ set(lib_src
 	"edFile/sources/ps2/_edFileFilerCDVD.cpp"
 )
 
-set( USE_PIZZA_PNG OFF CACHE BOOL "Use Pizza PNG" FORCE )
+set( USE_PIZZA_PNG OFF CACHE BOOL "Use Pizza PNG" )
 
 set(app_src
 	"include/Types.h"
@@ -72,8 +72,6 @@ add_subdirectory("KyaTexture")
 
 add_subdirectory("TextureUpload")
 
-target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
-=======
 target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
 
 if(USE_PIZZA_PNG)
