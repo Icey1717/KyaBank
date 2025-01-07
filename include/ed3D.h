@@ -3,6 +3,7 @@
 #include "Types.h"
 
 #include <string>
+#include <cstring>
 
 struct GXD_FileHeader
 {
@@ -12,7 +13,7 @@ struct GXD_FileHeader
 	uint hash;
 };
 
-__declspec(align(16)) struct ed_Chunck {
+struct alignas(16) ed_Chunck {
 	uint hash;
 	short field_0x4;
 	short field_0x6;
@@ -23,7 +24,7 @@ __declspec(align(16)) struct ed_Chunck {
 	inline std::string GetHeaderString() const {
 		// convert hash into chars
 		char hashStr[5];
-		memcpy(hashStr, &hash, 4);
+		std::memcpy(hashStr, &hash, 4);
 		hashStr[4] = 0;
 		return std::string(hashStr);
 	}

@@ -12,7 +12,8 @@ typedef unsigned char    uchar;
 typedef unsigned char    u_char;
 typedef unsigned int    uint;
 typedef unsigned int    uint3;
-typedef unsigned long long    ulong;
+
+typedef unsigned long ulong;
 
 // typedef unsigned uint128 __attribute__((mode(TI)));
 
@@ -51,13 +52,15 @@ enum EBankAction
 };
 
 union edpkt_data {
-	__declspec(align(16)) struct {
+	struct alignas(16) {
 		ulong cmdA;
 		ulong cmdB;
 	};
+
 	uint asU32[4];
 	//edF32VECTOR4 asVector;
 };
+
 
 #include <assert.h>
 #define IMPLEMENTATION_GUARD(x) assert(false);
@@ -65,7 +68,11 @@ union edpkt_data {
 #define edDebugPrintf(...)
 #define MY_LOG(...)
 
+#ifdef _MSC_VER
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#else
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
 
 #define NAME_NEXT_OBJECT(...)
 

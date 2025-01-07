@@ -1,6 +1,12 @@
 #pragma once
 #include <stdint.h>
 
+#ifdef _MSC_VER
+#define __fig __forceinline
+#else
+#define __fig __attribute__((always_inline, unused))
+#endif
+
 namespace GIFReg
 {
 	union GSBitBltBuf
@@ -196,8 +202,8 @@ namespace GIFReg
 			uint64_t CMD;
 		};
 
-		__forceinline bool IsBlack() const { return ((C == 2 && FIX == 0) || (A == 2 && A == B)) && D == 2; }
-		__forceinline bool IsOpaque(int amin, int amax) const { return ((A == B || amax == 0) && D == 0) || (A == 0 && B == D && amin == 0x80 && amax == 0x80); }
+		__fig bool IsBlack() const { return ((C == 2 && FIX == 0) || (A == 2 && A == B)) && D == 2; }
+		__fig bool IsOpaque(int amin, int amax) const { return ((A == B || amax == 0) && D == 0) || (A == 0 && B == D && amin == 0x80 && amax == 0x80); }
 	};
 
 	union GSPabe
