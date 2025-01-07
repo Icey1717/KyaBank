@@ -1,11 +1,16 @@
 #include "ConvertTexture.h"
 
 #include <fstream>
+#include <iostream>
 
 #include "ed3D.h"
 #include "KyaTexture/src/Texture.h"
 #include "renderer.h"
 #include "TextureUpload/src/TextureUpload.h"
+
+#ifdef USE_LODE_PNG
+#include "lodepng/lodepng.h"
+#endif
 
 #ifdef USE_PIZZA_PNG
 #include "pizza-png/src/Image.h"
@@ -14,29 +19,47 @@
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture, int textureIndex)
 {
 	const std::string filename = srcFileName + "_" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_" + std::to_string(pSimpleTexture->GetLayerIndex()) + "_" + std::to_string(textureIndex) + ".png";
-	const std::filesystem::path filePath = dstPath.concat(filename);
-
+  
 	printf("Writing: %s\n", filename.c_str());
 
-	std::ofstream file(dstPath, std::ios::binary);
-	if (!file.is_open())
+#ifdef USE_LODE_PNG
+  std::vector<unsigned char> png;
+	unsigned error = lodepng::encode(png, pSimpleTexture->GetUploadedImageData(), pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
+	
+	if (!error)
 	{
-		return false;
+		lodepng::save_file(png, dstPath.concat(filename).u8string());
 	}
 
+	if (error)
+  {
+    std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+		return false;
+  }
+#endif
+
 #ifdef USE_PIZZA_PNG
+  const std::filesystem::path filePath = dstPath.concat(filename);
+
+printf("Writing: %s\n", filename.c_str());
+
+std::ofstream file(dstPath, std::ios::binary);
+if (!file.is_open())
+{
+	return false;
+}
 	MaratTanalin::PizzaPNG::Image outImage(pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
 
 	for (int i = 0; i < pSimpleTexture->GetUploadedImageData().size(); i += 4)
 	{
-		outImage.addPixel(pSimpleTexture->GetUploadedImageData()[i + 0], pSimpleTexture->GetUploadedImageData()[i + 1], pSimpleTexture->GetUploadedImageData()[i + 2], pSimpleTexture->GetUploadedImageData()[i + 3]);
+		std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+		return false;
 	}
 
 	const std::string pngData = outImage;
 	file.write(pngData.c_str(), pngData.size());
 	file.close();
 #endif
-
 	return true;
 }
 

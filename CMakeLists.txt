@@ -73,6 +73,8 @@ add_subdirectory("KyaTexture")
 add_subdirectory("TextureUpload")
 
 target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
+=======
+target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
 
 if(USE_PIZZA_PNG)
 	set (pizza_src
@@ -92,7 +94,17 @@ if(USE_PIZZA_PNG)
 
 	target_compile_definitions(KyaBank PRIVATE "USE_PIZZA_PNG")
 else()
+  set (lodepng_src
+	  "lodepng/lodepng.h"
+	  "lodepng/lodepng.cpp"
+  )
 
+  add_library(lodepng STATIC
+	  ${lodepng_src}
+  )
+  target_link_libraries(KyaBank PRIVATE lodepng)
+  
+  target_compile_definitions(KyaBank PRIVATE "USE_LODE_PNG")
 endif()
 
 target_compile_definitions(KyaBank PRIVATE "PLATFORM_WIN")

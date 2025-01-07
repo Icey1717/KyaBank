@@ -13,6 +13,6 @@
 [submodule "TextureUpload"]
 	path = TextureUpload
 	url = https://github.com/Icey1717/TextureUpload.git
-[submodule "pizza-png"]
-	path = pizza-png
-	url = https://github.com/Marat-Tanalin/pizza-png.git
+[submodule "lodepng"]
+	path = lodepng
+	url = https://github.com/lvandeve/lodepng.git

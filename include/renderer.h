@@ -76,7 +76,7 @@ namespace Renderer
 
 		const TextureRegisters& GetTextureRegisters() const { return registers; }
 
-		const std::vector<char>& GetUploadedImageData() const { return uploadedImageData; }
+		const std::vector<unsigned char>& GetUploadedImageData() const { return uploadedImageData; }
 
 		int GetWidth() const { return width; }
 		int GetHeight() const { return height; }
@@ -86,7 +86,7 @@ namespace Renderer
 		Details details;
 		TextureRegisters registers;
 
-		std::vector<char> uploadedImageData;
+		std::vector<unsigned char> uploadedImageData;
 
 		int width;
 		int height;
