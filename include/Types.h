@@ -13,7 +13,11 @@ typedef unsigned char    u_char;
 typedef unsigned int    uint;
 typedef unsigned int    uint3;
 
+#ifdef _MSC_VER
+typedef unsigned long long ulong;
+#else
 typedef unsigned long ulong;
+#endif
 
 // typedef unsigned uint128 __attribute__((mode(TI)));
 

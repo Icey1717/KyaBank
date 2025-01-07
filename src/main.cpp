@@ -142,6 +142,8 @@ int main(int argc, char** argv)
 {
 	Initialize();
 
+	ListFiles("G:\\repos\\KYA_TEMP\\CDEURO\\LEVEL\\LEVEL_2\\LEVEL.BNK");
+
 	argparse::ArgumentParser program("KyaBank");
 
 	argparse::ArgumentParser listCommand("list");

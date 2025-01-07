@@ -2,13 +2,11 @@ cmake_minimum_required(VERSION 3.19.4)
 
 project(KyaBank)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT MSVC)
 	add_compile_options("-fpermissive")
-else()
-	add_compile_options("/Zc:strictStrings-")
 endif()
 
 # These should be setup as proper link libraries in the future, but for now they are just git submodules
