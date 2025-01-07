@@ -6,7 +6,10 @@
 #include "KyaTexture/src/Texture.h"
 #include "renderer.h"
 #include "TextureUpload/src/TextureUpload.h"
+
+#ifdef USE_PIZZA_PNG
 #include "pizza-png/src/Image.h"
+#endif
 
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture, int textureIndex)
 {
@@ -21,6 +24,7 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 		return false;
 	}
 
+#ifdef USE_PIZZA_PNG
 	MaratTanalin::PizzaPNG::Image outImage(pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
 
 	for (int i = 0; i < pSimpleTexture->GetUploadedImageData().size(); i += 4)
@@ -31,6 +35,7 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 	const std::string pngData = outImage;
 	file.write(pngData.c_str(), pngData.size());
 	file.close();
+#endif
 
 	return true;
 }

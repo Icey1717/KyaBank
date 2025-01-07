@@ -1,9 +1,15 @@
-cmake_minimum_required(VERSION 3.24.2)
+cmake_minimum_required(VERSION 3.19.4)
 
 project(KyaBank)
 
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (NOT MSVC)
+	add_compile_options("-fpermissive")
+else()
+	add_compile_options("/Zc:strictStrings-")
+endif()
 
 # These should be setup as proper link libraries in the future, but for now they are just git submodules
 set(lib_src 
@@ -34,20 +40,9 @@ set(lib_src
 	"edFile/sources/ps2/_edFileFilerCDVD.cpp"
 )
 
-set (pizza_src
-	"pizza-png/src/Chunk.cpp"
-	"pizza-png/src/Chunk.h"
-	"pizza-png/src/Image.cpp"
-	"pizza-png/src/Image.h"
-	"pizza-png/src/Pixel.cpp"
-	"pizza-png/src/Pixel.h"
-)
+set( USE_PIZZA_PNG OFF CACHE BOOL "Use Pizza PNG" FORCE )
 
-add_library(Pizza STATIC
-	${pizza_src}
-)
-
-set (app_src
+set(app_src
 	"include/Types.h"
 	"include/edStr.h"
 	"include/edMem.h"
@@ -77,7 +72,28 @@ add_subdirectory("KyaTexture")
 
 add_subdirectory("TextureUpload")
 
-target_link_libraries(KyaBank PRIVATE Texture TextureUpload Pizza)
+target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
+
+if(USE_PIZZA_PNG)
+	set (pizza_src
+		"pizza-png/src/Chunk.cpp"
+		"pizza-png/src/Chunk.h"
+		"pizza-png/src/Image.cpp"
+		"pizza-png/src/Image.h"
+		"pizza-png/src/Pixel.cpp"
+		"pizza-png/src/Pixel.h"
+	)
+
+	add_library(Pizza STATIC
+		${pizza_src}
+	)
+
+	target_link_libraries(KyaBank PRIVATE Pizza)
+
+	target_compile_definitions(KyaBank PRIVATE "USE_PIZZA_PNG")
+else()
+
+endif()
 
 target_compile_definitions(KyaBank PRIVATE "PLATFORM_WIN")
 
