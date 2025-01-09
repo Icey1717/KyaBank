@@ -78,6 +78,23 @@ void ListFiles(const char* pBankPath)
 	}
 }
 
+std::string BackslashToSlash(const std::string& string)
+{
+	std::string result;
+	for (const auto c : string)
+	{
+		if (c == '\\')
+		{
+			result += '/';
+		}
+		else
+		{
+			result += c;
+		}
+	}
+	return result;
+}
+
 void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRelative)
 {
 	printf("Extracting Files contained in %s:\n", pBankPath);
@@ -112,9 +129,10 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRela
 			if (bBankRelative) {
 				const std::string prefix = std::string("D:\\");
 				const std::string trailingFileName = fileName.substr(prefix.length(), fileName.length() - prefix.length());
-				outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+				outputPath = BackslashToSlash(std::string(pOutputPath) + "\\" + trailingFileName);
 
-				const std::string directoryPath = outputPath.substr(0, outputPath.find_last_of("\\"));
+				//Since slashes are illegal in filenames on Windows anyway, this should be safe
+				const std::string directoryPath = outputPath.substr(0, outputPath.find_last_of('/'));
 
 				if (!std::filesystem::exists(directoryPath)) {
 					std::filesystem::create_directories(directoryPath);
@@ -122,8 +140,8 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRela
 			}
 			else
 			{
-				const std::string trailingFileName = fileName.substr(fileName.find_last_of("\\") + 1, fileName.length());
-				outputPath = std::string(pOutputPath) + "\\" + trailingFileName;
+				const std::string trailingFileName = fileName.substr(fileName.find_last_of('\\') + 1, fileName.length());
+				outputPath = BackslashToSlash(std::string(pOutputPath) + '\\' + trailingFileName);
 			}
 
 			FILE* pFile = fopen(outputPath.c_str(), "wb");

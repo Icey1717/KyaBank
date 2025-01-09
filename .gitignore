@@ -34,3 +34,9 @@
 # Visual studio
 .vs
 out
+
+#CLion
+.idea
+cmake-build-debug
+
+testdir
