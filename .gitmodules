@@ -16,3 +16,6 @@
 [submodule "lodepng"]
 	path = lodepng
 	url = https://github.com/lvandeve/lodepng.git
+[submodule "KyaMesh"]
+	path = KyaMesh
+	url = https://github.com/Icey1717/KyaMesh.git
