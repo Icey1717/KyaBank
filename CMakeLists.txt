@@ -54,6 +54,8 @@ set(app_src
 	"src/PointerConv.cpp"
 	"src/ConvertTexture.cpp"
 	"src/ConvertTexture.h"
+	"src/ConvertMesh.cpp"
+	"src/ConvertMesh.h"
 	"src/edStr.cpp"
 	"src/edSystem.cpp"
 )

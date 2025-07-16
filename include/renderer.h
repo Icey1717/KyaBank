@@ -3,6 +3,9 @@
 #include "Types.h"
 #include "GifReg.h"
 
+#include <vector>
+#include <functional>
+
 struct ImageData
 {
 	void* pImage = nullptr;

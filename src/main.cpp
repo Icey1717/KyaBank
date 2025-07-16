@@ -15,6 +15,7 @@
 #include "ps2/_edFileFilerCDVD.h"
 
 #include "ConvertTexture.h"
+#include "ConvertMesh.h"
 
 void Initialize()
 {
@@ -158,6 +159,38 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRela
 
 int main(int argc, char** argv)
 {
+	const char* debugArgs = std::getenv("KYABANK_ARGS");
+	if (debugArgs)
+	{
+		// If the environment variable KYABANK_ARGS is set, use it as the command line arguments
+		std::string args(debugArgs);
+		args = args.substr(0, args.find_last_not_of(" \n\r\t") + 1); // Trim trailing whitespace
+		args = args.substr(args.find_first_not_of(" \n\r\t")); // Trim leading whitespace
+		std::vector<std::string> argList;
+		argList.push_back(*argv);
+
+		size_t pos = 0;
+		while ((pos = args.find(' ')) != std::string::npos) {
+			argList.push_back(args.substr(0, pos));
+			args.erase(0, pos + 1);
+		}
+
+		if (!args.empty()) {
+			argList.push_back(args);
+		}
+
+		argc = static_cast<int>(argList.size());
+
+		argv = new char* [argc];
+		for (int i = 0; i < argc; ++i) {
+			argv[i] = new char[argList[i].size() + 1];
+			strcpy(argv[i], argList[i].c_str());
+		}
+
+		// Add a null terminator for the last argument
+		argv[argc - 1][argList[argc - 1].size()] = '\0';
+	}
+
 	Initialize();
 
 	argparse::ArgumentParser program("KyaBank");
@@ -181,17 +214,27 @@ int main(int argc, char** argv)
 		.flag();
 
 	argparse::ArgumentParser texConvertCommand("texconvert");
-	texConvertCommand.add_description("Convert a single or set of .g2d file/s into .bmp");
+	texConvertCommand.add_description("Convert a single or set of .g2d file/s into .png");
 	texConvertCommand.add_argument("srcPath")
 		.help("The path to a .g2d file or folder containing .g2d files")
 		.required();
 	texConvertCommand.add_argument("-o", "--output")
-		.help("Output path for the .bmp files")
+		.help("Output path for the .png files")
+		.required();
+
+	argparse::ArgumentParser meshConvertCommand("meshconvert");
+	meshConvertCommand.add_description("Convert a single or set of .g3d file/s into .gltf/.glb");
+	meshConvertCommand.add_argument("srcPath")
+		.help("The path to a .g3d file or folder containing .g3d files")
+		.required();
+	meshConvertCommand.add_argument("-o", "--output")
+		.help("Output path for the .gltf/.glb files")
 		.required();
 
 	program.add_subparser(listCommand);
 	program.add_subparser(extractCommand);
 	program.add_subparser(texConvertCommand);
+	program.add_subparser(meshConvertCommand);
 
 	try {
 		program.parse_args(argc, argv);
@@ -212,6 +255,10 @@ int main(int argc, char** argv)
 
 	if (program.is_subcommand_used(texConvertCommand)) {
 		Texture::Convert(texConvertCommand.get<std::string>("srcPath"), texConvertCommand.get<std::string>("-o"));
+	}
+
+	if (program.is_subcommand_used(meshConvertCommand)) {
+		Mesh::Convert(meshConvertCommand.get<std::string>("srcPath"), meshConvertCommand.get<std::string>("-o"));
 	}
 
 	return 0;

@@ -66,33 +66,11 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
 	ed_g2d_manager manager;
+	char* pFileBuffer = nullptr;
 
 	printf("Converting: %s\n", srcPath.string().c_str());
 
-	// Try open the file.
-	std::ifstream file(srcPath, std::ios::binary);
-	if (!file.is_open())
-	{
-		printf("Failed to open file: %s\n", srcPath.string().c_str());
-		return false;
-	}
-
-	// Seek to the end to get the file size.
-	file.seekg(0, std::ios::end);
-	size_t fileSize = file.tellg();
-	file.seekg(0, std::ios::beg);
-
-	printf("File size: %d\n", static_cast<int>(fileSize));
-
-	// Read the file into a buffer.
-	char* pFileBuffer = new char[fileSize];
-	file.read(pFileBuffer, fileSize);
-	file.close();
-
-	// Process the read g2d file into a struct that lays out all the data for us (same as the engine would).
-	int outInt;
-	ed3DInstallG2D(pFileBuffer, fileSize, &outInt, &manager, 0);
-
+	Texture::Install(srcPath, manager, &pFileBuffer);
 
 	const std::string srcFileName = srcPath.filename().string();
 	const auto srcFileNameNoExt = srcFileName.substr(0, srcFileName.length() - srcPath.extension().string().length());
@@ -173,6 +151,35 @@ bool Texture::Convert(std::filesystem::path srcPath, std::filesystem::path dstPa
 	else {
 		return ConvertDirectory(srcPath, srcPath, dstPath);
 	}	
+
+	return true;
+}
+
+bool Texture::Install(std::filesystem::path srcPath, ed_g2d_manager& manager, char** ppFileBuffer)
+{
+	// Try open the file.
+	std::ifstream file(srcPath, std::ios::binary);
+	if (!file.is_open())
+	{
+		printf("Failed to open file: %s\n", srcPath.string().c_str());
+		return false;
+	}
+
+	// Seek to the end to get the file size.
+	file.seekg(0, std::ios::end);
+	size_t fileSize = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	printf("File size: %d\n", static_cast<int>(fileSize));
+
+	// Read the file into a buffer.
+	*ppFileBuffer = new char[fileSize];
+	file.read(*ppFileBuffer, fileSize);
+	file.close();
+
+	// Process the read g2d file into a struct that lays out all the data for us (same as the engine would).
+	int outInt;
+	ed3DInstallG2D(*ppFileBuffer, fileSize, &outInt, &manager, 0);
 
 	return true;
 }

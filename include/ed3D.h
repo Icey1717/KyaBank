@@ -343,6 +343,7 @@ struct edVertexNormal
 int ed3DG2DGetG2DNbMaterials(ed_Chunck* pChunck);
 ed_g2d_material* ed3DG2DGetG2DMaterialFromIndex(ed_g2d_manager* pManager, int index);
 ed_g2d_manager* ed3DInstallG2D(char* pFileBuffer, int fileLength, int* outInt, ed_g2d_manager* pManager, int param_5);
+ed_g3d_manager* ed3DInstallG3D(char* pFileBuffer, int fileLength, ulong flags, int* outInt, ed_g2d_manager* pTextureManager, int unknown, ed_g3d_manager* pManager);
 ed_Chunck* edChunckGetFirst(void* pBuffStart, char* pBuffEnd);
 uint edChunckGetNb(void* pStart, char* pEnd);
 ed_g3d_hierarchy* ed3DG3DHierarchyGetFromIndex(ed_g3d_manager* pMeshInfo, int count);
