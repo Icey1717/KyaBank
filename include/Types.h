@@ -36,7 +36,8 @@ typedef unsigned long    uint7;
 
 typedef unsigned int    u_int;
 
-struct sceCdlFILE {
+struct sceCdlFILE
+{
 	uint lsn; /* File location on disc */
 	uint size; /* File size */
 	char name[16]; /* File name (body) */
@@ -55,8 +56,10 @@ enum EBankAction
 	SEEK = 1
 };
 
-union edpkt_data {
-	struct alignas(16) {
+union edpkt_data
+{
+	struct alignas(16)
+	{
 		ulong cmdA;
 		ulong cmdB;
 	};
@@ -65,6 +68,84 @@ union edpkt_data {
 	//edF32VECTOR4 asVector;
 };
 
+union edF32VECTOR4
+{
+	struct
+	{
+		float x;
+		float y;
+		float z;
+		float w;
+	};
+
+	struct
+	{
+		int xi;
+		int yi;
+		int zi;
+		int wi;
+	};
+
+	float raw[4];
+};
+
+union alignas(16) edF32MATRIX4 {
+	struct alignas(16) {
+		float aa;
+		float ab;
+		float ac;
+		float ad;
+		float ba;
+		float bb;
+		float bc;
+		float bd;
+		float ca;
+		float cb;
+		float cc;
+		float cd;
+		float da;
+		float db;
+		float dc;
+		float dd;
+	};
+
+	struct alignas(16) {
+		edF32VECTOR4 v0;
+		edF32VECTOR4 v1;
+		edF32VECTOR4 v2;
+		edF32VECTOR4 v3;
+	};
+
+	struct alignas(16) {
+		edF32VECTOR4 rowX;
+		edF32VECTOR4 rowY;
+		edF32VECTOR4 rowZ;
+		edF32VECTOR4 rowT;
+	};
+
+	float raw[16];
+
+	edF32VECTOR4 vector[4];
+};
+
+union edF32VECTOR3
+{
+	struct
+	{
+		float x;
+		float y;
+		float z;
+	};
+
+	struct
+	{
+		float alpha;
+		float beta;
+		float gamma;
+	};
+
+	float raw[3];
+};
 
 #include <assert.h>
 #define IMPLEMENTATION_GUARD(x) assert(false);

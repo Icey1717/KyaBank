@@ -3,7 +3,8 @@
 #include "Types.h"
 #include "GifReg.h"
 
-struct ImageData {
+struct ImageData
+{
 	void* pImage = nullptr;
 	uint32_t canvasWidth = 0;
 	uint32_t canvasHeight = 0;
@@ -16,7 +17,8 @@ struct ImageData {
 	GIFReg::GSTrxReg trxReg;
 };
 
-struct TextureRegisters {
+struct TextureRegisters
+{
 	GIFReg::GSClamp clamp;
 	GIFReg::GSTex tex;
 	GIFReg::GSTest test;
@@ -91,6 +93,62 @@ namespace Renderer
 		int width;
 		int height;
 	};
+
+	struct CompatibilityVertexBufferData
+	{
+		// This is a stub for compatibility with existing code.
+		void Init(const int vertexCount, const int indexCount) {}
+	};
+
+	struct SimpleMesh : public RendererObject
+	{
+		SimpleMesh(const std::string inName, const GIFReg::GSPrim& inPrim)
+			: RendererObject(inName)
+			, prim(inPrim)
+		{
+		}
+		const GIFReg::GSPrim& GetPrim() const { return prim; }
+		CompatibilityVertexBufferData& GetVertexBufferData() { return vertexBufferData; }
+
+		GIFReg::GSPrim prim;
+		CompatibilityVertexBufferData vertexBufferData;
+	};
+
+	// Stub for compatibility with existing code.
+	inline void RenderMesh(SimpleMesh*, ushort) {}
+
+	struct alignas(32) GSVertexUnprocessed
+	{
+		struct {
+			int32_t ST[2];
+			float Q;
+			float _pad;
+		} STQ;
+
+		uint32_t RGBA[4];
+
+		struct Vertex {
+			union {
+				float fXYZ[3];
+				int32_t iXYZ[3];
+			};
+			uint32_t flags;
+		} XYZFlags;
+	};
+
+	struct alignas(32) GSVertexUnprocessedNormal : public GSVertexUnprocessed
+	{
+		union Normal {
+			float fNormal[4];
+			int32_t iNormal[4];
+		} normal;
+	};
+
+	template<typename VertexType>
+	void KickVertex(VertexType& vtx, GIFReg::GSPrim primReg, uint32_t skip, CompatibilityVertexBufferData& drawBuffer)
+	{
+
+	}
 }
 
 template<typename... Args>
@@ -123,5 +181,11 @@ private:
 inline Multidelegate<ed_g2d_manager*, std::string>& ed3DGetTextureLoadedDelegate()
 {
 	static Multidelegate<ed_g2d_manager*, std::string> delegate;
+	return delegate;
+}
+
+inline Multidelegate<ed_g3d_manager*, std::string>& ed3DGetMeshLoadedDelegate()
+{
+	static Multidelegate<ed_g3d_manager*, std::string> delegate;
 	return delegate;
 }

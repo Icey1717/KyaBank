@@ -369,3 +369,45 @@ ed_g2d_manager* ed3DInstallG2D(char* pFileBuffer, int fileLength, int* outInt, e
 
 	return pOutManager;
 }
+
+// Finds the number of chunks between two pointers, based off the size of the chunks.
+uint edChunckGetNb(void* pStart, char* pEnd)
+{
+	uint nbChunks;
+
+	ed_Chunck* pChunck = reinterpret_cast<ed_Chunck*>(pStart);
+
+	nbChunks = 0;
+
+	if ((pEnd != (char*)0x0) && (pEnd <= reinterpret_cast<char*>(pChunck))) {
+		pChunck = (ed_Chunck*)0x0;
+	}
+
+	while (pChunck != (ed_Chunck*)0x0) {
+		nbChunks = nbChunks + 1;
+
+		if ((pEnd == (char*)0x0) || ((reinterpret_cast<char*>(pChunck) + pChunck->size) < pEnd)) {
+			pChunck = reinterpret_cast<ed_Chunck*>(reinterpret_cast<char*>(pChunck) + pChunck->size);
+		}
+		else {
+			pChunck = (ed_Chunck*)0x0;
+		}
+	}
+
+	return nbChunks & 0xffff;
+}
+
+ed_g3d_hierarchy* ed3DG3DHierarchyGetFromIndex(ed_g3d_manager* pMeshInfo, int count)
+{
+	ed_hash_code* pMVar1;
+
+	pMVar1 = (ed_hash_code*)(pMeshInfo->HALL + 2);
+
+	for (; count != 0; count = count + -1) {
+		pMVar1 = pMVar1 + 1;
+	}
+
+	char* pLoaded = (char*)LOAD_SECTION(pMVar1->pData);
+
+	return (ed_g3d_hierarchy*)(pLoaded + 0x10);
+}

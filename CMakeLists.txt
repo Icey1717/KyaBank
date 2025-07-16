@@ -46,6 +46,7 @@ set(app_src
 	"include/edMem.h"
 	"include/edSystem.h"
 	"include/ed3D.h"
+	"include/edList.h"
 	"include/PointerConv.h"
 
 	"src/main.cpp"
@@ -68,9 +69,11 @@ include_directories("include", "src")
 set(Standalone ON CACHE BOOL "Enable standalone mode" FORCE)
 add_subdirectory("KyaTexture")
 
+add_subdirectory("KyaMesh")
+
 add_subdirectory("TextureUpload")
 
-target_link_libraries(KyaBank PRIVATE Texture TextureUpload)
+target_link_libraries(KyaBank PRIVATE Texture Mesh TextureUpload)
 
 if(USE_PIZZA_PNG)
 	set (pizza_src
