@@ -9,6 +9,12 @@
 #include "ConvertTexture.h"
 #include "../KyaMesh/src/Mesh.h"
 
+static bool ConvertToGltf(Renderer::SimpleMesh* pSimpleMesh, std::filesystem::path dstPath, std::string name)
+{
+
+	return true;
+}
+
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
 	ed_g3d_manager manager;
@@ -44,10 +50,12 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 
 		char* pTextureFileBuffer = nullptr;
 
-		Texture::Install(srcTexturePath, textureManager, &pTextureFileBuffer);
+		if (!Texture::Install(srcTexturePath, textureManager, &pTextureFileBuffer)) {
+			return false;
+		}
 	}
 
-	// Process the read g2d file into a struct that lays out all the data for us (same as the engine would).
+	// Process the read g3d file into a struct that lays out all the data for us (same as the engine would).
 	int outInt;
 	ed3DInstallG3D(pFileBuffer, fileSize, 0x0, &outInt, &textureManager, 0xc, &manager);
 
@@ -67,13 +75,21 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 		std::filesystem::create_directories(dstPath);
 	}
 
-	Renderer::Kya::GetMeshLibraryMutable().AddMesh(&manager, srcFileName);
+	Renderer::Kya::GetMeshLibraryMutable().AddMesh(&manager, srcFileNameNoExt);
 
 	Renderer::Kya::GetMeshLibrary().ForEach(
-		[](const Renderer::Kya::G3D& g3d)
+		[dstPath](const Renderer::Kya::G3D& g3d)
 		{
 			// To GLTF.
-
+			for(auto& hierarchy : g3d.GetHierarchies()) {
+				for (auto& lod : hierarchy.lods) {
+					for (auto& strip : lod.object.strips) {
+						if (strip.pSimpleMesh) {
+							ConvertToGltf(strip.pSimpleMesh.get(), dstPath, g3d.GetName());
+						}
+					}
+				}
+			}
 		}
 	);
 

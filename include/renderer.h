@@ -4,7 +4,11 @@
 #include "GifReg.h"
 
 #include <vector>
+#include <string>
 #include <functional>
+
+struct ed_g2d_manager;
+struct ed_g3d_manager;
 
 struct ImageData
 {
@@ -97,32 +101,10 @@ namespace Renderer
 		int height;
 	};
 
-	struct CompatibilityVertexBufferData
-	{
-		// This is a stub for compatibility with existing code.
-		void Init(const int vertexCount, const int indexCount) {}
-	};
-
-	struct SimpleMesh : public RendererObject
-	{
-		SimpleMesh(const std::string inName, const GIFReg::GSPrim& inPrim)
-			: RendererObject(inName)
-			, prim(inPrim)
-		{
-		}
-		const GIFReg::GSPrim& GetPrim() const { return prim; }
-		CompatibilityVertexBufferData& GetVertexBufferData() { return vertexBufferData; }
-
-		GIFReg::GSPrim prim;
-		CompatibilityVertexBufferData vertexBufferData;
-	};
-
-	// Stub for compatibility with existing code.
-	inline void RenderMesh(SimpleMesh*, ushort) {}
-
 	struct alignas(32) GSVertexUnprocessed
 	{
-		struct {
+		struct
+		{
 			int32_t ST[2];
 			float Q;
 			float _pad;
@@ -130,7 +112,8 @@ namespace Renderer
 
 		uint32_t RGBA[4];
 
-		struct Vertex {
+		struct Vertex
+		{
 			union {
 				float fXYZ[3];
 				int32_t iXYZ[3];
@@ -147,11 +130,54 @@ namespace Renderer
 		} normal;
 	};
 
-	template<typename VertexType>
-	void KickVertex(VertexType& vtx, GIFReg::GSPrim primReg, uint32_t skip, CompatibilityVertexBufferData& drawBuffer)
+	// Just struct compatible with the Mesh library code that can hold vertex and index data.
+	struct CompatibilityMeshBuffer
 	{
+		void Init(const int vertexCount, const int indexCount);
 
-	}
+		struct Index
+		{
+			uint16_t* buff{};
+			size_t tail{};
+			size_t maxcount{};
+		};
+
+		struct Vertex
+		{
+			GSVertexUnprocessedNormal* buff{};
+			size_t head{}, tail{}, next{}, maxcount{}; // head: first vertex, tail: last vertex + 1, next: last indexed + 1
+			size_t xy_tail{};
+			uint64_t xy[4]{};
+			float fxyz[4][3]{};
+		};
+
+		Vertex vertex;
+		Index index;
+
+	private:
+		// Not time critical, vector is fine.
+		std::vector<GSVertexUnprocessedNormal> vertices;
+		std::vector<uint16_t> indices;
+	};
+
+	struct SimpleMesh : public RendererObject
+	{
+		SimpleMesh(const std::string inName, const GIFReg::GSPrim& inPrim)
+			: RendererObject(inName)
+			, prim(inPrim)
+		{
+		}
+		const GIFReg::GSPrim& GetPrim() const { return prim; }
+		CompatibilityMeshBuffer& GetVertexBufferData() { return vertexBufferData; }
+
+		GIFReg::GSPrim prim;
+		CompatibilityMeshBuffer vertexBufferData;
+	};
+
+	// Stub for compatibility with existing code.
+	inline void RenderMesh(SimpleMesh*, ushort) {}
+
+	void KickVertex(GSVertexUnprocessedNormal& vtx, GIFReg::GSPrim primReg, uint32_t skip, CompatibilityMeshBuffer& drawBuffer);
 }
 
 template<typename... Args>

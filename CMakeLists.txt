@@ -51,6 +51,7 @@ set(app_src
 
 	"src/main.cpp"
 	"src/ed3D.cpp"
+	"src/MeshBuffer.cpp"
 	"src/PointerConv.cpp"
 	"src/ConvertTexture.cpp"
 	"src/ConvertTexture.h"
