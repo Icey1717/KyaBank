@@ -160,7 +160,7 @@ void ExtractFiles(const char* pBankPath, const char* pOutputPath, bool bBankRela
 int main(int argc, char** argv)
 {
 	const char* debugArgs = std::getenv("KYABANK_ARGS");
-	if (debugArgs)
+	if (debugArgs && argc == 1)
 	{
 		// If the environment variable KYABANK_ARGS is set, use it as the command line arguments
 		std::string args(debugArgs);
