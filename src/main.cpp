@@ -15,7 +15,7 @@
 #include "ps2/_edFileFilerCDVD.h"
 
 #include "ConvertTexture.h"
-#include "ConvertMesh.h"
+#include "Mesh/ConvertMesh.h"
 
 void Initialize()
 {

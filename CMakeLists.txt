@@ -55,8 +55,11 @@ set(app_src
 	"src/PointerConv.cpp"
 	"src/ConvertTexture.cpp"
 	"src/ConvertTexture.h"
-	"src/ConvertMesh.cpp"
-	"src/ConvertMesh.h"
+	"src/Mesh/ConvertMesh.cpp"
+	"src/Mesh/ConvertMesh.h"
+	"src/Mesh/MeshBuffer.cpp"
+	"src/Mesh/MeshBuffer.h"
+	"src/Mesh/TinyGltfImpl.cpp"
 	"src/edStr.cpp"
 	"src/edSystem.cpp"
 )
