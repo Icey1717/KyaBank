@@ -48,6 +48,7 @@ set(app_src
 	"include/ed3D.h"
 	"include/edList.h"
 	"include/PointerConv.h"
+	"include/MultiDelegate.h"
 
 	"src/main.cpp"
 	"src/ed3D.cpp"

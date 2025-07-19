@@ -16,6 +16,8 @@
 #include "pizza-png/src/Image.h"
 #endif
 
+static Multidelegate<const std::string&> gOnTextureConverted;
+
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture, int textureIndex)
 {
 	const std::string filename = srcFileName + "_" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_" + std::to_string(pSimpleTexture->GetLayerIndex()) + "_" + std::to_string(textureIndex) + ".png";
@@ -28,7 +30,9 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 
 	if (!error)
 	{
-		lodepng::save_file(png, dstPath.concat(filename).string());
+		const std::string filePath = dstPath.concat(filename).string();
+		lodepng::save_file(png, filePath);
+		gOnTextureConverted(filename);
 	}
 
 	if (error)
@@ -182,6 +186,11 @@ bool Texture::Install(std::filesystem::path srcPath, ed_g2d_manager& manager, ch
 	ed3DInstallG2D(*ppFileBuffer, fileSize, &outInt, &manager, 0);
 
 	return true;
+}
+
+Multidelegate<const std::string&>& Texture::GetTextureConvertedDelegate()
+{
+	return gOnTextureConverted;
 }
 
 void Renderer::SimpleTexture::CreateRenderer(const CombinedImageData& imageData)

@@ -5,7 +5,7 @@
 
 #include <vector>
 #include <string>
-#include <functional>
+#include "MultiDelegate.h"
 
 struct ed_g2d_manager;
 struct ed_g3d_manager;
@@ -179,33 +179,6 @@ namespace Renderer
 
 	void KickVertex(GSVertexUnprocessedNormal& vtx, GIFReg::GSPrim primReg, uint32_t skip, CompatibilityMeshBuffer& drawBuffer);
 }
-
-template<typename... Args>
-class Multidelegate {
-public:
-	using Delegate = std::function<void(Args...)>;
-
-	void operator+=(const Delegate& delegate) {
-		delegates.push_back(delegate);
-	}
-
-	void operator-=(const Delegate& delegate) {
-		delegates.erase(std::remove(delegates.begin(), delegates.end(), delegate), delegates.end());
-	}
-
-	void operator()(Args... args) const {
-		for (const auto& delegate : delegates) {
-			delegate(args...);
-		}
-	}
-
-	void RemoveAll() {
-		delegates.clear();
-	}
-
-private:
-	std::vector<Delegate> delegates;
-};
 
 inline Multidelegate<ed_g2d_manager*, std::string>& ed3DGetTextureLoadedDelegate()
 {

@@ -21,6 +21,7 @@ public:
 	int GetPositionAccessorIndex() const { assert(positionAccessorIndex != -1); return positionAccessorIndex; }
 	int GetIndexAccessorIndex() const { assert(indexAccessorIndex != -1); return indexAccessorIndex; }
 	int GetNormalAccessorIndex() const { assert(normalAccessorIndex != -1); return normalAccessorIndex; }
+	int GetUvAccessorIndex() const { assert(uvAccessorIndex != -1); return uvAccessorIndex; }
 
 private:
 	struct OffsetData
@@ -28,6 +29,7 @@ private:
 		size_t positionOffset = 0;
 		size_t indexOffset = 0;
 		size_t normalOffset = 0;
+		size_t uvOffset = 0;
 	};
 
 	void PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh);
@@ -38,6 +40,7 @@ private:
 
 	// Tiny GLTF buffer and views.
 	tinygltf::Buffer buffer;
+
 	tinygltf::BufferView positionView;
 	tinygltf::Accessor positionAccessor;
 
@@ -47,7 +50,11 @@ private:
 	tinygltf::BufferView normalView;
 	tinygltf::Accessor normalAccessor;
 
+	tinygltf::BufferView uvView;
+	tinygltf::Accessor uvAccessor;
+
 	int positionAccessorIndex = -1;
 	int indexAccessorIndex = -1;
 	int normalAccessorIndex = -1;
+	int uvAccessorIndex = -1;
 };

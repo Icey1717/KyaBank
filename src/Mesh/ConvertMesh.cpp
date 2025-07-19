@@ -26,6 +26,7 @@ public:
 		tinygltf::Primitive primitive;
 		primitive.attributes["POSITION"] = meshBuffer.GetPositionAccessorIndex();
 		primitive.attributes["NORMAL"] = meshBuffer.GetNormalAccessorIndex();
+		primitive.attributes["TEXCOORD_0"] = meshBuffer.GetUvAccessorIndex();
 		primitive.indices = meshBuffer.GetIndexAccessorIndex();
 		primitive.mode = TINYGLTF_MODE_TRIANGLES;
 
@@ -49,12 +50,40 @@ public:
 		model.defaultScene = 0;
 	}
 
+	void AddMaterial(std::string filename)
+	{
+		tinygltf::Image image;
+		image.uri = filename;
+		image.name = "MyDiffuse";
+		model.images.push_back(image);
+		int imageIndex = static_cast<int>(model.images.size() - 1);
+
+		tinygltf::Texture texture;
+		texture.source = imageIndex; // reference the image
+		model.textures.push_back(texture);
+		int textureIndex = static_cast<int>(model.textures.size() - 1);
+
+		tinygltf::Material material;
+		material.name = "TexturedMaterial";
+
+		tinygltf::Parameter param;
+		param.json_double_value = { {"index", static_cast<double>(textureIndex)} };
+
+		material.pbrMetallicRoughness.baseColorTexture.index = textureIndex;
+		material.pbrMetallicRoughness.baseColorTexture.texCoord = 0;
+		material.doubleSided = true;
+
+		model.materials.push_back(material);
+	}
+
 	void AddPrimitive(Renderer::SimpleMesh* pSimpleMesh)
 	{
 		tinygltf::Primitive primitive = primitiveList.AddPrimitive(pSimpleMesh, model);
+
+		int materialIndex = static_cast<int>(model.materials.size() - 1);
+		primitive.material = materialIndex;
 		mesh.primitives.push_back(primitive);
 	}
-
 
 	bool ConvertToGltf(std::filesystem::path dstPath)
 	{
@@ -75,8 +104,38 @@ private:
 	PrimitiveList primitiveList;
 };
 
+static bool InstallTexture(ed_g2d_manager& manager, char** pTextureFileBuffer, const std::filesystem::path& srcPath)
+{
+	// Create a copy of the srcPath for the texture.
+	std::filesystem::path srcTexturePath = srcPath;
+	srcTexturePath.replace_extension(".g2d");
+
+	if (!Texture::Install(srcTexturePath, manager, pTextureFileBuffer)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool ConvertTexture(const std::filesystem::path& srcPath, std::filesystem::path dstPath)
+{
+	// Create a copy of the srcPath for the texture.
+	std::filesystem::path srcTexturePath = srcPath;
+	srcTexturePath.replace_extension(".g2d");
+
+	return Texture::Convert(srcTexturePath, dstPath);
+}
+
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
+	std::vector<std::string> convertedList;
+
+	Texture::GetTextureConvertedDelegate() +=
+		[&convertedList](const std::string& textureName)
+		{
+			convertedList.push_back(textureName);
+		};
+
 	ed_g3d_manager manager;
 
 	printf("Converting: %s\n", srcPath.string().c_str());
@@ -102,18 +161,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 	file.close();
 
 	ed_g2d_manager textureManager;
-
-	{
-		// Create a copy of the srcPath for the texture.
-		std::filesystem::path srcTexturePath = srcPath;
-		srcTexturePath.replace_extension(".g2d");
-
-		char* pTextureFileBuffer = nullptr;
-
-		if (!Texture::Install(srcTexturePath, textureManager, &pTextureFileBuffer)) {
-			return false;
-		}
-	}
+	char* pTextureFileBuffer = nullptr;
+	InstallTexture(textureManager, &pTextureFileBuffer, srcPath);
 
 	// Process the read g3d file into a struct that lays out all the data for us (same as the engine would).
 	int outInt;
@@ -135,13 +184,17 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 		std::filesystem::create_directories(dstPath);
 	}
 
+	if (!ConvertTexture(srcPath, dstPath)) {
+		printf("Failed to convert texture for %s\n", srcPath.string().c_str());
+		return false;
+	}
+
 	Renderer::Kya::GetMeshLibraryMutable().AddMesh(&manager, srcFileNameNoExt);
 
 	Renderer::Kya::GetMeshLibrary().ForEach(
-		[dstPath](const Renderer::Kya::G3D& g3d)
+		[dstPath, &convertedList](const Renderer::Kya::G3D& g3d)
 		{
 			// To GLTF.
-
 			int hierarchyIndex = 0;
 			for (auto& hierarchy : g3d.GetHierarchies()) {
 				int lodIndex = 0;
@@ -151,6 +204,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 					std::string outputName = g3d.GetName() + "_H" + std::to_string(hierarchyIndex) + "_L" + std::to_string(lodIndex) + ".gltf";
 
 					Model model;
+
+					model.AddMaterial(convertedList[0]);
 
 					for (auto& strip : lod.object.strips) {
 						if (strip.pSimpleMesh) {

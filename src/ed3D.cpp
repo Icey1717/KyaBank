@@ -540,7 +540,7 @@ void ed3DPrepareMaterialBank(ed_Chunck* pMBNA, ed_g2d_manager* pTextureInfo)
 	int mbnaSize;
 	ed_Chunck* pChunk;
 	ushort materialCount;
-	ed_hash_code* pcVar4;
+	ed_hash_code* pHashCode;
 	ed_Chunck* pMBNK;
 
 	mbnaSize = pMBNA->size;
@@ -563,10 +563,10 @@ void ed3DPrepareMaterialBank(ed_Chunck* pMBNA, ed_g2d_manager* pTextureInfo)
 
 				ED3D_LOG(LogLevel::Info, "ed3DPrepareMaterialBank Trying to find texture {}: {}", ((pChunk->size - 0x10U) >> 4) - materialCount, pMaterialHash->hash.ToString());
 
-				pcVar4 = edHashcodeGet(pMaterialHash->hash, pTextureInfo->pMATA_HASH);
-				if (pcVar4 != (ed_hash_code*)0x0) {
-					ED3D_LOG(LogLevel::Info, "ed3DPrepareMaterialBank Found texture: {}", pcVar4->hash.ToString());
-					pMaterialHash->pData = STORE_SECTION(pcVar4);
+				pHashCode = edHashcodeGet(pMaterialHash->hash, pTextureInfo->pMATA_HASH);
+				if (pHashCode != (ed_hash_code*)0x0) {
+					ED3D_LOG(LogLevel::Info, "ed3DPrepareMaterialBank Found texture: {}", pHashCode->hash.ToString());
+					pMaterialHash->pData = STORE_SECTION(pHashCode);
 				}
 
 				materialCount = materialCount - 1;

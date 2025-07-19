@@ -3,6 +3,8 @@
 #include "renderer.h"
 #include <stdexcept>
 
+#define int12_to_float(x)	(float)((float)x * 0.000244140625f)
+
 static size_t AlignTo(size_t value, size_t alignment)
 {
 	return (value + alignment - 1) & ~(alignment - 1);
@@ -64,6 +66,21 @@ void MeshBuffer::PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh)
 			vertex.normal.fNormal[2],
 		};
 		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(normal), reinterpret_cast<const unsigned char*>(normal) + sizeof(float) * 3);
+	}
+
+	// UVs.
+	
+	PadBuffer(bufferData, 4); // Align to 4 bytes
+	offsetData.uvOffset = bufferData.size();
+
+	for (size_t i = 0; i < meshBuffer.vertex.tail; ++i)
+	{
+		const Renderer::GSVertexUnprocessedNormal& vertex = meshBuffer.vertex.buff[i];
+		float uv[2] = {
+			int12_to_float(vertex.STQ.ST[0]) / vertex.STQ.Q,
+			int12_to_float(vertex.STQ.ST[1]) / vertex.STQ.Q,
+		};
+		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(uv), reinterpret_cast<const unsigned char*>(uv) + sizeof(float) * 2);
 	}
 }
 
@@ -146,6 +163,18 @@ MeshBuffer::MeshBuffer(Renderer::SimpleMesh* pSimpleMesh)
 	normalAccessor.type = TINYGLTF_TYPE_VEC3;
 
 	ValidateBufferView(normalView, bufferData);
+
+	// Add BufferView for UVs
+	uvView.byteOffset = offsetData.uvOffset;
+	uvView.byteLength = sizeof(float) * 2 * pSimpleMesh->GetVertexBufferData().vertex.tail; // 2 floats per UV
+	uvView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+
+	// Add Accessor for UVs
+	uvAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+	uvAccessor.count = pSimpleMesh->GetVertexBufferData().vertex.tail;
+	uvAccessor.type = TINYGLTF_TYPE_VEC2;
+
+	ValidateBufferView(uvView, bufferData);
 }
 
 void MeshBuffer::AttachToModel(tinygltf::Model& model)
@@ -155,6 +184,7 @@ void MeshBuffer::AttachToModel(tinygltf::Model& model)
 	positionView.buffer = bufferIndex;
 	indexView.buffer = bufferIndex;
 	normalView.buffer = bufferIndex;
+	uvView.buffer = bufferIndex;
 
 	model.buffers.push_back(buffer);
 
@@ -172,4 +202,9 @@ void MeshBuffer::AttachToModel(tinygltf::Model& model)
 	normalAccessor.bufferView = static_cast<int>(model.bufferViews.size());
 	model.bufferViews.push_back(normalView);
 	model.accessors.push_back(normalAccessor);
+
+	uvAccessorIndex = static_cast<int>(model.accessors.size());
+	uvAccessor.bufferView = static_cast<int>(model.bufferViews.size());
+	model.bufferViews.push_back(uvView);
+	model.accessors.push_back(uvAccessor);
 }
