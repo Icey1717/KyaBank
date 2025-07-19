@@ -14,10 +14,33 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
-static void PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh, std::vector<unsigned char>& bufferData)
+static size_t AlignTo(size_t value, size_t alignment)
+{
+	return (value + alignment - 1) & ~(alignment - 1);
+}
+
+static void PadBuffer(std::vector<unsigned char>& bufferData, size_t alignment)
+{
+	size_t alignedSize = AlignTo(bufferData.size(), alignment);
+	if (alignedSize > bufferData.size()) {
+		bufferData.resize(alignedSize, 0); // pad with zero bytes
+	}
+}
+
+struct OffsetData
+{
+	size_t positionOffset;
+	size_t indexOffset;
+	size_t normalOffset;
+};
+
+static void PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh, std::vector<unsigned char>& bufferData, OffsetData& offsetData)
 {
 	auto& meshBuffer = pSimpleMesh->GetVertexBufferData();
 
+	offsetData.positionOffset = bufferData.size();
+
+	// Vertices.
 	for (size_t i = 0; i < meshBuffer.vertex.tail; ++i)
 	{
 		const Renderer::GSVertexUnprocessedNormal& vertex = meshBuffer.vertex.buff[i];
@@ -31,10 +54,34 @@ static void PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh, std::vector<unsign
 		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(xyz), reinterpret_cast<const unsigned char*>(xyz) + sizeof(float) * 3);
 	}
 
-	for (size_t i = 0; i < meshBuffer.index.tail; ++i)
+	PadBuffer(bufferData, 4); // Align to 4 bytes
+	offsetData.indexOffset = bufferData.size();
+
+	// Indices.
+	for (size_t i = 0; i + 2 < meshBuffer.index.tail; i += 3)
 	{
-		const uint16_t index = meshBuffer.index.buff[i];
-		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(&index), reinterpret_cast<const unsigned char*>(&index) + sizeof(uint16_t));
+		uint16_t i0 = meshBuffer.index.buff[i];
+		uint16_t i1 = meshBuffer.index.buff[i + 1];
+		uint16_t i2 = meshBuffer.index.buff[i + 2];
+
+		// Flip winding (CW to CCW)
+		uint16_t flipped[] = { i0, i2, i1 };
+		bufferData.insert(bufferData.end(), reinterpret_cast<unsigned char*>(flipped), reinterpret_cast<unsigned char*>(flipped) + sizeof(flipped));
+	}
+
+	PadBuffer(bufferData, 4); // Align to 2 bytes
+	offsetData.normalOffset = bufferData.size();
+
+	// Normals.
+	for (size_t i = 0; i < meshBuffer.vertex.tail; ++i)
+	{
+		const Renderer::GSVertexUnprocessedNormal& vertex = meshBuffer.vertex.buff[i];
+		float normal[3] = {
+			vertex.normal.fNormal[0],
+			vertex.normal.fNormal[1],
+			vertex.normal.fNormal[2]
+		};
+		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(normal), reinterpret_cast<const unsigned char*>(normal) + sizeof(float) * 3);
 	}
 }
 
@@ -78,8 +125,11 @@ static void BuildModel(Renderer::SimpleMesh* pSimpleMesh, tinygltf::Model& model
 	tinygltf::Mesh mesh;
 	tinygltf::Primitive primitive;
 
+	assert(pSimpleMesh->GetVertexBufferData().index.tail % 3 == 0);
+
 	std::vector<unsigned char> bufferData;
-	PopulateBuffer(pSimpleMesh, bufferData);
+	OffsetData offsetData;
+	PopulateBuffer(pSimpleMesh, bufferData, offsetData);
 
 	// Add Buffer
 	tinygltf::Buffer buffer;
@@ -89,7 +139,7 @@ static void BuildModel(Renderer::SimpleMesh* pSimpleMesh, tinygltf::Model& model
 	// Add BufferView for position
 	tinygltf::BufferView positionView;
 	positionView.buffer = 0;
-	positionView.byteOffset = 0;
+	positionView.byteOffset = offsetData.positionOffset;
 	positionView.byteLength = sizeof(float) * 3 * pSimpleMesh->GetVertexBufferData().vertex.tail; // 3 floats per vertex
 	positionView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
 	model.bufferViews.push_back(positionView);
@@ -112,7 +162,7 @@ static void BuildModel(Renderer::SimpleMesh* pSimpleMesh, tinygltf::Model& model
 	// Add BufferView for indices
 	tinygltf::BufferView indexView;
 	indexView.buffer = 0;
-	indexView.byteOffset = positionView.byteOffset + positionView.byteLength;
+	indexView.byteOffset = offsetData.indexOffset;
 	indexView.byteLength = sizeof(uint16_t) * pSimpleMesh->GetVertexBufferData().index.tail; // 2 bytes per index
 	indexView.target = TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER;
 	model.bufferViews.push_back(indexView);
@@ -123,11 +173,30 @@ static void BuildModel(Renderer::SimpleMesh* pSimpleMesh, tinygltf::Model& model
 	tinygltf::Accessor indexAccessor;
 	indexAccessor.bufferView = 1;
 	indexAccessor.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT;
-	indexAccessor.count = pSimpleMesh->GetVertexBufferData().index.tail;
+	indexAccessor.count = pSimpleMesh->GetVertexBufferData().index.tail - (pSimpleMesh->GetVertexBufferData().index.tail % 3);
 	indexAccessor.type = TINYGLTF_TYPE_SCALAR;
 	model.accessors.push_back(indexAccessor);
 
+	// Add BufferView for normals
+	tinygltf::BufferView normalView;
+	normalView.buffer = 0;
+	normalView.byteOffset = offsetData.normalOffset;
+	normalView.byteLength = sizeof(float) * 3 * pSimpleMesh->GetVertexBufferData().vertex.tail; // 3 floats per normal
+	normalView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+	model.bufferViews.push_back(normalView);
+
+	// Add Accessor for normals
+	tinygltf::Accessor normalAccessor;
+	normalAccessor.bufferView = 2;
+	normalAccessor.componentType = TINYGLTF_COMPONENT_TYPE_FLOAT;
+	normalAccessor.count = pSimpleMesh->GetVertexBufferData().vertex.tail;
+	normalAccessor.type = TINYGLTF_TYPE_VEC3;
+	model.accessors.push_back(normalAccessor);
+
+	ValidateBufferView(normalView, bufferData);
+
 	primitive.attributes["POSITION"] = 0;
+	primitive.attributes["NORMAL"] = 2;
 	primitive.indices = 1;
 	primitive.mode = TINYGLTF_MODE_TRIANGLES;
 
