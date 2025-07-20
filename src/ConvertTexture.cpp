@@ -18,9 +18,9 @@
 
 static Multidelegate<const std::string&> gOnTextureConverted;
 
-static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture, int textureIndex)
+static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture)
 {
-	const std::string filename = srcFileName + "_" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_" + std::to_string(pSimpleTexture->GetLayerIndex()) + "_" + std::to_string(textureIndex) + ".png";
+	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + ".png";
   
 	printf("Writing: %s\n", filename.c_str());
 
@@ -96,8 +96,6 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 
 	printf("Found %d materials\n", static_cast<int>(texture.GetMaterials().size()));
 
-	int textureIndex = 0;
-
 	for (auto& material : texture.GetMaterials()) {
 		printf("Processing material, layers: %d\n", static_cast<int>(material.layers.size()));
 
@@ -105,8 +103,7 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 			printf("Processing layer, textures: %d\n", static_cast<int>(layer.textures.size()));
 
 			for (auto& texture : layer.textures) {
-				WriteBitmapFile(srcFileNameNoExt, dstPath, texture.pSimpleTexture, textureIndex);
-				textureIndex++;
+				WriteBitmapFile(srcFileNameNoExt, dstPath, texture.pSimpleTexture);
 			}
 		}
 	}
