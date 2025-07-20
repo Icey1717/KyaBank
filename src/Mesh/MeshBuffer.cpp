@@ -1,6 +1,9 @@
 #include "MeshBuffer.h"
 
 #include "renderer.h"
+
+#include "Winding.h"
+
 #include <stdexcept>
 
 #define int12_to_float(x)	(float)((float)x * 0.000244140625f)
@@ -21,6 +24,8 @@ static void PadBuffer(std::vector<unsigned char>& bufferData, size_t alignment)
 void MeshBuffer::PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh)
 {
 	auto& meshBuffer = pSimpleMesh->GetVertexBufferData();
+
+	Winding::FixInconsistentWinding(meshBuffer);
 
 	offsetData.positionOffset = bufferData.size();
 
@@ -49,7 +54,7 @@ void MeshBuffer::PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh)
 		uint16_t i2 = meshBuffer.index.buff[i + 2];
 
 		// Flip winding (CW to CCW)
-		uint16_t flipped[] = { i0, i2, i1 };
+		uint16_t flipped[] = { i0, i1, i2 };
 		bufferData.insert(bufferData.end(), reinterpret_cast<unsigned char*>(flipped), reinterpret_cast<unsigned char*>(flipped) + sizeof(flipped));
 	}
 

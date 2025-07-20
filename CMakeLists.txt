@@ -5,6 +5,18 @@ project(KyaBank)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable FetchContent
+include(FetchContent)
+
+# Add glm
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG        0.9.9.8 # Or use the latest stable tag (e.g. 1.0.1)
+)
+
+FetchContent_MakeAvailable(glm)
+
 if (NOT MSVC)
 	add_compile_options("-fpermissive")
 endif()
@@ -60,6 +72,8 @@ set(app_src
 	"src/Mesh/ConvertMesh.h"
 	"src/Mesh/MeshBuffer.cpp"
 	"src/Mesh/MeshBuffer.h"
+	"src/Mesh/Winding.cpp"
+	"src/Mesh/Winding.h"
 	"src/Mesh/TinyGltfImpl.cpp"
 	"src/edStr.cpp"
 	"src/edSystem.cpp"
@@ -80,7 +94,7 @@ add_subdirectory("KyaMesh")
 
 add_subdirectory("TextureUpload")
 
-target_link_libraries(KyaBank PRIVATE Texture Mesh TextureUpload)
+target_link_libraries(KyaBank PRIVATE Texture Mesh TextureUpload glm)
 
 if(USE_PIZZA_PNG)
 	set (pizza_src
