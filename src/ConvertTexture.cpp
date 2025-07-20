@@ -16,11 +16,18 @@
 #include "pizza-png/src/Image.h"
 #endif
 
-static Multidelegate<const std::string&> gOnTextureConverted;
+static Multidelegate<const std::string&, uint64_t> gOnTextureConverted;
 
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture)
 {
-	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + "_H" + std::to_string(pSimpleTexture->GetHash()) + ".png";
+	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + ".png";
+	const std::string filePath = dstPath.concat(filename).string();
+
+	if (std::filesystem::exists(filePath)) {
+		printf("File already exists: %s\n", filePath.c_str());
+		gOnTextureConverted(filename, pSimpleTexture->GetHash());
+		return false;
+	}
   
 	printf("Writing: %s\n", filename.c_str());
 
@@ -30,9 +37,8 @@ static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPa
 
 	if (!error)
 	{
-		const std::string filePath = dstPath.concat(filename).string();
 		lodepng::save_file(png, filePath);
-		gOnTextureConverted(filename);
+		gOnTextureConverted(filename, pSimpleTexture->GetHash());
 	}
 
 	if (error)
@@ -185,7 +191,7 @@ bool Texture::Install(std::filesystem::path srcPath, ed_g2d_manager& manager, ch
 	return true;
 }
 
-Multidelegate<const std::string&>& Texture::GetTextureConvertedDelegate()
+Multidelegate<const std::string&, uint64_t>& Texture::GetTextureConvertedDelegate()
 {
 	return gOnTextureConverted;
 }

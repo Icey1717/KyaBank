@@ -175,12 +175,11 @@ static void ListMaterials(ed_g2d_manager& textureManager)
 	}
 }
 
-static int GetMaterialIndex(const std::vector<std::string>& convertedList, uint64_t materialHash)
+static int GetMaterialIndex(const std::vector<std::uint64_t>& hashes, uint64_t materialHash)
 {
-	for (int i = 0; i < convertedList.size(); ++i) {
-		if (convertedList[i].find(std::to_string(materialHash)) != std::string::npos) {
-			printf("Found material %s index: %d for hash: %llu\n", convertedList[i].c_str(), i, materialHash);
-			return i;
+	for (int i = 0; i < hashes.size(); ++i) {
+		if (hashes[i] == materialHash) {
+			return i; // Found the material index
 		}
 	}
 
@@ -189,12 +188,14 @@ static int GetMaterialIndex(const std::vector<std::string>& convertedList, uint6
 
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
-	std::vector<std::string> convertedList;
+	std::unordered_map<uint64_t, std::string> convertedList;
+
+	Texture::GetTextureConvertedDelegate().RemoveAll();
 
 	Texture::GetTextureConvertedDelegate() +=
-		[&convertedList](const std::string& textureName)
+		[&convertedList](const std::string& textureName, uint64_t hash)
 		{
-			convertedList.push_back(textureName);
+			convertedList.emplace(hash, textureName);
 		};
 
 	ed_g3d_manager manager;
@@ -223,7 +224,9 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 
 	ed_g2d_manager textureManager;
 	char* pTextureFileBuffer = nullptr;
-	InstallTexture(textureManager, &pTextureFileBuffer, srcPath);
+	if (!InstallTexture(textureManager, &pTextureFileBuffer, srcPath)) {
+		return false;
+	}
 
 	ListMaterials(textureManager);
 
@@ -274,14 +277,16 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 
 					Model model;
 
-					for (auto& material : convertedList) {
+					std::vector<uint64_t> hashes;
+					for (auto& [hash, filename] : convertedList) {
 						// Add the material to the model.
-						model.AddMaterial(material);
+						model.AddMaterial(filename);
+						hashes.push_back(hash);
 					}
 
 					for (auto& strip : lod.object.strips) {
 						if (strip.pSimpleMesh) {
-							const int materialIndex = GetMaterialIndex(convertedList, GetTextureHashCode(pHashCode, strip.pStrip->materialIndex));
+							const int materialIndex = GetMaterialIndex(hashes, GetTextureHashCode(pHashCode, strip.pStrip->materialIndex));
 							assert(materialIndex != -1 && "Material index not found in converted list");
 							model.AddPrimitive(strip.pSimpleMesh.get(), materialIndex);
 						}
@@ -298,6 +303,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 			}
 		}
 	);
+
+	Renderer::Kya::GetMeshLibraryMutable().Clear();
 
 	return true;
 }
