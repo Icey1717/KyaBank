@@ -125,3 +125,73 @@ struct Gif_Tag
 };
 
 constexpr uint32_t gVifEndCode = 0x60000000;
+
+/* GS registers address */
+	/*-- vertex info. reg--*/
+#define SCE_GS_PRIM         0x00
+#define SCE_GS_RGBAQ        0x01
+#define SCE_GS_ST           0x02
+#define SCE_GS_UV           0x03
+#define SCE_GS_XYZF2        0x04
+#define SCE_GS_XYZ2         0x05
+#define SCE_GS_FOG          0x0a
+#define SCE_GS_XYZF3        0x0c
+#define SCE_GS_XYZ3         0x0d
+#define SCE_GS_XYOFFSET_1   0x18
+#define SCE_GS_XYOFFSET_2   0x19
+#define SCE_GS_PRMODECONT   0x1a
+
+	/*-- drawing attribute reg. --*/
+#define SCE_GS_PRMODE       0x1b
+#define SCE_GS_TEX0_1       0x06
+#define SCE_GS_TEX0_2       0x07
+#define SCE_GS_TEX1_1       0x14
+#define SCE_GS_TEX1_2       0x15
+#define SCE_GS_TEX2_1       0x16
+#define SCE_GS_TEX2_2       0x17
+#define SCE_GS_TEXCLUT      0x1c
+#define SCE_GS_SCANMSK      0x22
+#define SCE_GS_MIPTBP1_1    0x34
+#define SCE_GS_MIPTBP1_2    0x35
+#define SCE_GS_MIPTBP2_1    0x36
+#define SCE_GS_MIPTBP2_2    0x37
+#define SCE_GS_CLAMP_1      0x08
+#define SCE_GS_CLAMP_2      0x09
+#define SCE_GS_TEXA         0x3b
+#define SCE_GS_FOGCOL       0x3d
+#define SCE_GS_TEXFLUSH     0x3f
+
+/*-- pixel operation reg. --*/
+#define SCE_GS_SCISSOR_1    0x40
+#define SCE_GS_SCISSOR_2    0x41
+#define SCE_GS_ALPHA_1      0x42
+#define SCE_GS_ALPHA_2      0x43
+#define SCE_GS_DIMX         0x44
+#define SCE_GS_DTHE         0x45
+#define SCE_GS_COLCLAMP     0x46
+#define SCE_GS_TEST_1       0x47
+#define SCE_GS_TEST_2       0x48
+#define SCE_GS_PABE         0x49
+#define SCE_GS_FBA_1        0x4a
+#define SCE_GS_FBA_2        0x4b
+
+	/*-- buffer reg. --*/
+#define SCE_GS_FRAME_1      0x4c
+#define SCE_GS_FRAME_2      0x4d
+#define SCE_GS_ZBUF_1       0x4e
+#define SCE_GS_ZBUF_2       0x4f
+
+	/*-- inter-buffer transfer reg. --*/
+#define SCE_GS_BITBLTBUF    0x50
+#define SCE_GS_TRXPOS       0x51
+#define SCE_GS_TRXREG       0x52
+#define SCE_GS_TRXDIR       0x53
+#define SCE_GS_HWREG        0x54
+
+	/*-- other reg. --*/
+#define SCE_GS_SIGNAL       0x60
+#define SCE_GS_FINISH       0x61
+#define SCE_GS_LABEL        0x62
+#define SCE_GS_NOP          0x7f
+
+#define SCE_GIF_PACKED_AD 0x0e

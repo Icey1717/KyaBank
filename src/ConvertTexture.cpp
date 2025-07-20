@@ -103,7 +103,7 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 			printf("Processing layer, textures: %d\n", static_cast<int>(layer.textures.size()));
 
 			for (auto& texture : layer.textures) {
-				WriteBitmapFile(srcFileNameNoExt, dstPath, texture.pSimpleTexture);
+				WriteBitmapFile(srcFileNameNoExt, dstPath, texture.pSimpleTexture.get());
 			}
 		}
 	}

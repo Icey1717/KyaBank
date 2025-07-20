@@ -124,17 +124,19 @@ static bool ConvertTexture(const std::filesystem::path& srcPath, std::filesystem
 	return Texture::Convert(srcTexturePath, dstPath);
 }
 
-static uint64_t GetMaterialHash(ed_hash_code* pHashes, int index)
+static uint64_t GetTextureHashCode(ed_hash_code* pMaterialBank, int index)
 {
-	if (pHashes == nullptr || index < 0) {
+	if (pMaterialBank == nullptr || index < 0) {
 		return 0;
 	}
 
 	// Get the hash code for the material.
-	ed_hash_code* pHashCode = pHashes + index;
+	ed_hash_code* pHashCode = pMaterialBank + index;
 	if (pHashCode->pData == 0) {
 		return 0;
 	}
+
+	printf("Material hash: %s\n", pHashCode->hash.ToString().c_str());
 
 	ed_hash_code* pOtherHashCode = LOAD_SECTION_CAST(ed_hash_code*, pHashCode->pData);
 
@@ -156,6 +158,33 @@ static uint64_t GetMaterialHash(ed_hash_code* pHashes, int index)
 	ed_g2d_texture* pTexture = reinterpret_cast<ed_g2d_texture*>(pTEX + 1);
 
 	return pTexture->hashCode.hash.number;
+}
+
+static void ListMaterials(ed_g2d_manager& textureManager)
+{
+	ed_Chunck* pMATA = textureManager.pMATA_HASH;
+	ed_hash_code* pHashCodes = reinterpret_cast<ed_hash_code*>(pMATA + 1);
+
+	int nbMaterials = pMATA->size / sizeof(ed_hash_code) - 1; // -1 for the header
+
+	printf("\nFound %d materials\n", nbMaterials);
+
+	for (int i = 0; i < nbMaterials; ++i) {
+		ed_hash_code* pHashCode = pHashCodes + i;
+		printf("Material %d: %s\n", i, pHashCode->hash.ToString().c_str());
+	}
+}
+
+static int GetMaterialIndex(const std::vector<std::string>& convertedList, uint64_t materialHash)
+{
+	for (int i = 0; i < convertedList.size(); ++i) {
+		if (convertedList[i].find(std::to_string(materialHash)) != std::string::npos) {
+			printf("Found material %s index: %d for hash: %llu\n", convertedList[i].c_str(), i, materialHash);
+			return i;
+		}
+	}
+
+	return -1; // Not found
 }
 
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
@@ -195,6 +224,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 	ed_g2d_manager textureManager;
 	char* pTextureFileBuffer = nullptr;
 	InstallTexture(textureManager, &pTextureFileBuffer, srcPath);
+
+	ListMaterials(textureManager);
 
 	// Process the read g3d file into a struct that lays out all the data for us (same as the engine would).
 	int outInt;
@@ -239,6 +270,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 					// Bulid the output name.
 					std::string outputName = g3d.GetName() + "_H" + std::to_string(hierarchyIndex) + "_L" + std::to_string(lodIndex) + ".gltf";
 
+					printf("\nBeginning conversion of %s\n", outputName.c_str());
+
 					Model model;
 
 					for (auto& material : convertedList) {
@@ -248,18 +281,8 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 
 					for (auto& strip : lod.object.strips) {
 						if (strip.pSimpleMesh) {
-							int materialIndex = -1;
-							const uint64_t materialHash = GetMaterialHash(pHashCode, strip.pStrip->materialIndex);
-
-							for (int i = 0; i < convertedList.size(); ++i) {
-								if (convertedList[i].find(std::to_string(materialHash)) != std::string::npos) {
-									materialIndex = i;
-									break;
-								}
-							}
-
+							const int materialIndex = GetMaterialIndex(convertedList, GetTextureHashCode(pHashCode, strip.pStrip->materialIndex));
 							assert(materialIndex != -1 && "Material index not found in converted list");
-
 							model.AddPrimitive(strip.pSimpleMesh.get(), materialIndex);
 						}
 					}
