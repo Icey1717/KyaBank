@@ -64,6 +64,8 @@ namespace Renderer
 
 			size_t layerCount = 0;
 			size_t materialCount = 0;
+
+			uint64_t hash;
 		};
 
 		SimpleTexture(const std::string inName, const Details& inDetails, const TextureRegisters& inTextureRegisters)
@@ -82,6 +84,8 @@ namespace Renderer
 
 		size_t GetLayerCount() const { return details.layerCount; }
 		size_t GetMaterialCount() const { return details.materialCount; }
+
+		uint64_t GetHash() const { return details.hash; }
 
 		const TextureRegisters& GetTextureRegisters() const { return registers; }
 

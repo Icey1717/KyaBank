@@ -54,7 +54,7 @@ public:
 	{
 		tinygltf::Image image;
 		image.uri = filename;
-		image.name = "MyDiffuse";
+		image.name = filename;
 		model.images.push_back(image);
 		int imageIndex = static_cast<int>(model.images.size() - 1);
 
@@ -76,11 +76,9 @@ public:
 		model.materials.push_back(material);
 	}
 
-	void AddPrimitive(Renderer::SimpleMesh* pSimpleMesh)
+	void AddPrimitive(Renderer::SimpleMesh* pSimpleMesh, const int materialIndex)
 	{
 		tinygltf::Primitive primitive = primitiveList.AddPrimitive(pSimpleMesh, model);
-
-		int materialIndex = static_cast<int>(model.materials.size() - 1);
 		primitive.material = materialIndex;
 		mesh.primitives.push_back(primitive);
 	}
@@ -124,6 +122,40 @@ static bool ConvertTexture(const std::filesystem::path& srcPath, std::filesystem
 	srcTexturePath.replace_extension(".g2d");
 
 	return Texture::Convert(srcTexturePath, dstPath);
+}
+
+static uint64_t GetMaterialHash(ed_hash_code* pHashes, int index)
+{
+	if (pHashes == nullptr || index < 0) {
+		return 0;
+	}
+
+	// Get the hash code for the material.
+	ed_hash_code* pHashCode = pHashes + index;
+	if (pHashCode->pData == 0) {
+		return 0;
+	}
+
+	ed_hash_code* pOtherHashCode = LOAD_SECTION_CAST(ed_hash_code*, pHashCode->pData);
+
+	ed_Chunck* pMAT = LOAD_SECTION_CAST(ed_Chunck*, pOtherHashCode->pData);
+
+	ed_g2d_material* pMaterial = reinterpret_cast<ed_g2d_material*>(pMAT + 1);
+
+	ed_Chunck* pLAY = LOAD_SECTION_CAST(ed_Chunck*, pMaterial->aLayers[0]);
+
+	ed_g2d_layer* pLayer = reinterpret_cast<ed_g2d_layer*>(pLAY + 1);
+
+	if (pLayer->bHasTexture == 0) {
+		return 0;
+	}
+
+	// Get the hash code for the texture.
+	ed_Chunck* pTEX = LOAD_SECTION_CAST(ed_Chunck*, pLayer->pTex);
+
+	ed_g2d_texture* pTexture = reinterpret_cast<ed_g2d_texture*>(pTEX + 1);
+
+	return pTexture->hashCode.hash.number;
 }
 
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
@@ -199,17 +231,36 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 			for (auto& hierarchy : g3d.GetHierarchies()) {
 				int lodIndex = 0;
 
+				ed_Chunck* pMBNK = LOAD_SECTION_CAST(ed_Chunck*, hierarchy.pHierarchy->pTextureInfo);
+
+				ed_hash_code* pHashCode = reinterpret_cast<ed_hash_code*>(pMBNK + 1);
+
 				for (auto& lod : hierarchy.lods) {
 					// Bulid the output name.
 					std::string outputName = g3d.GetName() + "_H" + std::to_string(hierarchyIndex) + "_L" + std::to_string(lodIndex) + ".gltf";
 
 					Model model;
 
-					model.AddMaterial(convertedList[0]);
+					for (auto& material : convertedList) {
+						// Add the material to the model.
+						model.AddMaterial(material);
+					}
 
 					for (auto& strip : lod.object.strips) {
 						if (strip.pSimpleMesh) {
-							model.AddPrimitive(strip.pSimpleMesh.get());
+							int materialIndex = -1;
+							const uint64_t materialHash = GetMaterialHash(pHashCode, strip.pStrip->materialIndex);
+
+							for (int i = 0; i < convertedList.size(); ++i) {
+								if (convertedList[i].find(std::to_string(materialHash)) != std::string::npos) {
+									materialIndex = i;
+									break;
+								}
+							}
+
+							assert(materialIndex != -1 && "Material index not found in converted list");
+
+							model.AddPrimitive(strip.pSimpleMesh.get(), materialIndex);
 						}
 					}
 

@@ -20,7 +20,7 @@ static Multidelegate<const std::string&> gOnTextureConverted;
 
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture)
 {
-	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + ".png";
+	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + "_H" + std::to_string(pSimpleTexture->GetHash()) + ".png";
   
 	printf("Writing: %s\n", filename.c_str());
 

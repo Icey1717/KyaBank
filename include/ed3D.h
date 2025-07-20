@@ -229,7 +229,7 @@ struct ed_g3d_hierarchy
 	uint pShadowAnimMatrix; // edF32MATRIX4*
 	int pLinkTransformData; // ed_3d_hierarchy*
 	int field_0x94; // undefined*
-	int pTextureInfo; // undefined*
+	int pTextureInfo; // edChunck*
 	ushort lodCount;
 	ushort flags_0x9e;
 	int pHierarchySetup; // ed_3d_hierarchy_setup*
