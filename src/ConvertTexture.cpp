@@ -153,7 +153,7 @@ static bool ConvertDirectory(std::filesystem::path rootPath, std::filesystem::pa
 
 bool Texture::Convert(std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
-	if (dstPath.has_filename()) {
+	if (!std::filesystem::is_directory(dstPath)) {
 		printf("Output path must be a directory\n");
 		return false;
 	}
@@ -167,11 +167,11 @@ bool Texture::Convert(std::filesystem::path srcPath, std::filesystem::path dstPa
 		std::filesystem::create_directories(dstPath);
 	}
 
-	if (srcPath.has_filename()) {
-		return ConvertFile(srcPath, srcPath, dstPath);
+	if (std::filesystem::is_directory(srcPath)) {
+		return ConvertDirectory(srcPath, srcPath, dstPath);
 	}
 	else {
-		return ConvertDirectory(srcPath, srcPath, dstPath);
+		return ConvertFile(srcPath, srcPath, dstPath);
 	}	
 
 	return true;
