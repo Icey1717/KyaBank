@@ -83,10 +83,11 @@ This is useful for debugging or integration with IDEs that don't pass arguments 
 
 ```text
 > KyaBank list LEVEL01.BNK
-
- - /textures/skybox.g2d
- - /models/bridge.g3d
- - /scripts/trigger.bin
+Listing Files contained in G:\repos\KYA_TEMP\CDEURO\LEVEL\LEVEL_2\LEVEL.BNK:
+D:\PROJECTS\B-WITCH\RESOURCE\BUILD\LEVEL_2\install.bin
+D:\PROJECTS\B-WITCH\RESOURCE\BUILD\OBJECT\CHARACTER\Companion\Map\CMP_TIPS.G2D
+D:\PROJECTS\B-WITCH\RESOURCE\BUILD\OBJECT\CHARACTER\Companion\Map\CMP_HALO.G2D
+D:\PROJECTS\B-WITCH\RESOURCE\BUILD\PARTICLE\sparks.g2d
 ```
 
 ---
