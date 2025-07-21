@@ -21,6 +21,21 @@ static void PadBuffer(std::vector<unsigned char>& bufferData, size_t alignment)
 	}
 }
 
+static uint8_t FixAlpha(const uint8_t& color)
+{
+	float fPixelColor = static_cast<float>(color);
+	fPixelColor = fPixelColor / (128.0f / 255.0f);
+
+	if (fPixelColor > 255.0f) {
+		fPixelColor = 255.0f;
+	}
+	else if (fPixelColor < 0.0f) {
+		fPixelColor = 0.0f;
+	}
+
+	return static_cast<uint8_t>(fPixelColor);
+}
+
 void MeshBuffer::PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh)
 {
 	auto& meshBuffer = pSimpleMesh->GetVertexBufferData();
@@ -86,6 +101,25 @@ void MeshBuffer::PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh)
 			int12_to_float(vertex.STQ.ST[1]) / vertex.STQ.Q,
 		};
 		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(uv), reinterpret_cast<const unsigned char*>(uv) + sizeof(float) * 2);
+	}
+
+	// Vertex color.
+
+	PadBuffer(bufferData, 4); // Align to 4 bytes
+	offsetData.colorOffset = bufferData.size();
+
+	for (size_t i = 0; i < meshBuffer.vertex.tail; ++i)
+	{
+		const Renderer::GSVertexUnprocessedNormal& vertex = meshBuffer.vertex.buff[i];
+		
+		uint8_t color[4] = {
+			static_cast<uint8_t>(vertex.RGBA[0]),
+			static_cast<uint8_t>(vertex.RGBA[1]),
+			static_cast<uint8_t>(vertex.RGBA[2]),
+			static_cast<uint8_t>(FixAlpha(vertex.RGBA[3])),
+		};
+
+		bufferData.insert(bufferData.end(), reinterpret_cast<const unsigned char*>(color), reinterpret_cast<const unsigned char*>(color) + sizeof(uint8_t) * 4);
 	}
 }
 
@@ -180,6 +214,19 @@ MeshBuffer::MeshBuffer(Renderer::SimpleMesh* pSimpleMesh)
 	uvAccessor.type = TINYGLTF_TYPE_VEC2;
 
 	ValidateBufferView(uvView, bufferData);
+
+	// Add BufferView for colors
+	colorView.byteOffset = offsetData.colorOffset;
+	colorView.byteLength = sizeof(uint8_t) * 4 * pSimpleMesh->GetVertexBufferData().vertex.tail; // 4 floats per color
+	colorView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+
+	// Add Accessor for colors
+	colorAccessor.componentType = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+	colorAccessor.count = pSimpleMesh->GetVertexBufferData().vertex.tail;
+	colorAccessor.type = TINYGLTF_TYPE_VEC4;
+	colorAccessor.normalized = true;
+
+	ValidateBufferView(colorView, bufferData);
 }
 
 void MeshBuffer::AttachToModel(tinygltf::Model& model)
@@ -190,6 +237,7 @@ void MeshBuffer::AttachToModel(tinygltf::Model& model)
 	indexView.buffer = bufferIndex;
 	normalView.buffer = bufferIndex;
 	uvView.buffer = bufferIndex;
+	colorView.buffer = bufferIndex;
 
 	model.buffers.push_back(buffer);
 
@@ -212,4 +260,9 @@ void MeshBuffer::AttachToModel(tinygltf::Model& model)
 	uvAccessor.bufferView = static_cast<int>(model.bufferViews.size());
 	model.bufferViews.push_back(uvView);
 	model.accessors.push_back(uvAccessor);
+
+	colorAccessorIndex = static_cast<int>(model.accessors.size());
+	colorAccessor.bufferView = static_cast<int>(model.bufferViews.size());
+	model.bufferViews.push_back(colorView);
+	model.accessors.push_back(colorAccessor);
 }

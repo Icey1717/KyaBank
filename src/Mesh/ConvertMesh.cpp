@@ -27,6 +27,7 @@ public:
 		primitive.attributes["POSITION"] = meshBuffer.GetPositionAccessorIndex();
 		primitive.attributes["NORMAL"] = meshBuffer.GetNormalAccessorIndex();
 		primitive.attributes["TEXCOORD_0"] = meshBuffer.GetUvAccessorIndex();
+		primitive.attributes["COLOR_0"] = meshBuffer.GetColorAccessorIndex();
 		primitive.indices = meshBuffer.GetIndexAccessorIndex();
 		primitive.mode = TINYGLTF_MODE_TRIANGLES;
 
@@ -50,7 +51,7 @@ public:
 		model.defaultScene = 0;
 	}
 
-	void AddMaterial(std::string filename)
+	void AddMaterial(std::string filename, const TextureRegisters& textureRegisters)
 	{
 		tinygltf::Image image;
 		image.uri = filename;
@@ -72,6 +73,9 @@ public:
 		material.pbrMetallicRoughness.baseColorTexture.index = textureIndex;
 		material.pbrMetallicRoughness.baseColorTexture.texCoord = 0;
 		material.doubleSided = true;
+
+		// Should probably add some support for alpha here.
+		material.alphaMode = "OPAQUE";
 
 		model.materials.push_back(material);
 	}
@@ -188,14 +192,21 @@ static int GetMaterialIndex(const std::vector<std::uint64_t>& hashes, uint64_t m
 
 static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path srcPath, std::filesystem::path dstPath)
 {
-	std::unordered_map<uint64_t, std::string> convertedList;
+	struct ConvertedTexture
+	{
+		std::string name;
+		Renderer::SimpleTexture* pSimpleTexture;
+	};
+
+	std::unordered_map<uint64_t, ConvertedTexture> convertedList;
 
 	Texture::GetTextureConvertedDelegate().RemoveAll();
 
 	Texture::GetTextureConvertedDelegate() +=
-		[&convertedList](const std::string& textureName, uint64_t hash)
+		[&convertedList](const std::string& textureName, Renderer::SimpleTexture* pSimpleTexture)
 		{
-			convertedList.emplace(hash, textureName);
+			ConvertedTexture convertedTexture = { textureName, pSimpleTexture };
+			convertedList.emplace(pSimpleTexture->GetHash(), convertedTexture);
 		};
 
 	ed_g3d_manager manager;
@@ -278,9 +289,9 @@ static bool ConvertFile(std::filesystem::path rootPath, std::filesystem::path sr
 					Model model;
 
 					std::vector<uint64_t> hashes;
-					for (auto& [hash, filename] : convertedList) {
+					for (auto& [hash, data] : convertedList) {
 						// Add the material to the model.
-						model.AddMaterial(filename);
+						model.AddMaterial(data.name, data.pSimpleTexture->GetTextureRegisters());
 						hashes.push_back(hash);
 					}
 

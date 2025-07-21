@@ -22,6 +22,7 @@ public:
 	int GetIndexAccessorIndex() const { assert(indexAccessorIndex != -1); return indexAccessorIndex; }
 	int GetNormalAccessorIndex() const { assert(normalAccessorIndex != -1); return normalAccessorIndex; }
 	int GetUvAccessorIndex() const { assert(uvAccessorIndex != -1); return uvAccessorIndex; }
+	int GetColorAccessorIndex() const { assert(colorAccessorIndex != -1); return colorAccessorIndex; }
 
 private:
 	struct OffsetData
@@ -30,6 +31,7 @@ private:
 		size_t indexOffset = 0;
 		size_t normalOffset = 0;
 		size_t uvOffset = 0;
+		size_t colorOffset = 0;
 	};
 
 	void PopulateBuffer(Renderer::SimpleMesh* pSimpleMesh);
@@ -53,8 +55,12 @@ private:
 	tinygltf::BufferView uvView;
 	tinygltf::Accessor uvAccessor;
 
+	tinygltf::BufferView colorView;
+	tinygltf::Accessor colorAccessor;
+
 	int positionAccessorIndex = -1;
 	int indexAccessorIndex = -1;
 	int normalAccessorIndex = -1;
 	int uvAccessorIndex = -1;
+	int colorAccessorIndex = -1;
 };

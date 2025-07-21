@@ -16,29 +16,44 @@
 #include "pizza-png/src/Image.h"
 #endif
 
-static Multidelegate<const std::string&, uint64_t> gOnTextureConverted;
+static Multidelegate<const std::string&, Renderer::SimpleTexture*> gOnTextureConverted;
+
+static void FixAlpha(std::vector<unsigned char>& imageData)
+{
+	for (int i = 0; i < imageData.size(); i += 4)
+	{
+		float fPixelColor = static_cast<float>(imageData[i + 3]);
+		fPixelColor = fPixelColor / (128.0f / 255.0f);
+
+		if (fPixelColor > 255.0f) {
+			fPixelColor = 255.0f;
+		}
+		else if (fPixelColor < 0.0f) {
+			fPixelColor = 0.0f;
+		}
+
+		imageData[i + 3] = static_cast<unsigned char>(fPixelColor);
+	}
+}
 
 static bool WriteBitmapFile(std::string srcFileName, std::filesystem::path dstPath, Renderer::SimpleTexture* pSimpleTexture)
 {
 	const std::string filename = srcFileName + "_M" + std::to_string(pSimpleTexture->GetMaterialIndex()) + "_L" + std::to_string(pSimpleTexture->GetLayerIndex()) + ".png";
 	const std::string filePath = dstPath.concat(filename).string();
-
-	if (std::filesystem::exists(filePath)) {
-		printf("File already exists: %s\n", filePath.c_str());
-		gOnTextureConverted(filename, pSimpleTexture->GetHash());
-		return false;
-	}
   
 	printf("Writing: %s\n", filename.c_str());
 
+	std::vector<unsigned char> imageData = pSimpleTexture->GetUploadedImageData();
+	FixAlpha(imageData);
+
 #ifdef USE_LODE_PNG
 	std::vector<unsigned char> png;
-	unsigned error = lodepng::encode(png, pSimpleTexture->GetUploadedImageData(), pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
+	unsigned error = lodepng::encode(png, imageData, pSimpleTexture->GetWidth(), pSimpleTexture->GetHeight());
 
 	if (!error)
 	{
 		lodepng::save_file(png, filePath);
-		gOnTextureConverted(filename, pSimpleTexture->GetHash());
+		gOnTextureConverted(filename, pSimpleTexture);
 	}
 
 	if (error)
@@ -191,7 +206,7 @@ bool Texture::Install(std::filesystem::path srcPath, ed_g2d_manager& manager, ch
 	return true;
 }
 
-Multidelegate<const std::string&, uint64_t>& Texture::GetTextureConvertedDelegate()
+Multidelegate<const std::string&, Renderer::SimpleTexture*>& Texture::GetTextureConvertedDelegate()
 {
 	return gOnTextureConverted;
 }
